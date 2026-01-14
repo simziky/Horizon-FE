@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { GoChevronDown, GoChevronLeft, GoChevronRight } from "react-icons/go";
-
 interface PaginationProps {
     page: number
     totalPages: number
@@ -24,14 +21,6 @@ const TablePagination = ({ page, totalPages, handlePageChange }: PaginationProps
     return (
         <div className="flex items-center justify-center px-4 py-3 flex-wrap border-t border-gray-200 pb-16">
             <div className="flex items-center space-x-2">
-                <button
-                    disabled={page <= 1}
-                    onClick={() => page > 1 && handlePageChange(page - 1)}
-                    className="h-9 w-9 flex items-center justify-center rounded-full border border-gray-200 shadow-md disabled:text-gray-400 enabled:hover:bg-gray-100 enabled:cursor-pointer"
-                >
-                    <GoChevronLeft className="h-5 w-5" />
-                </button>
-
                 {pageNumbers.map(pageNumber => (
                     <button
                         key={pageNumber}
@@ -41,14 +30,6 @@ const TablePagination = ({ page, totalPages, handlePageChange }: PaginationProps
                         {pageNumber}
                     </button>
                 ))}
-
-                <button
-                    disabled={page >= totalPages}
-                    onClick={() => page < totalPages && handlePageChange(page + 1)}
-                    className="h-9 w-9 flex items-center justify-center rounded-full border border-gray-200 shadow-md disabled:text-gray-400 enabled:hover:bg-gray-100 enabled:cursor-pointer"
-                >
-                    <GoChevronRight className="h-5 w-5" />
-                </button>
             </div>
         </div>
     )

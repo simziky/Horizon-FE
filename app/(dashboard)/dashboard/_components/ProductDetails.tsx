@@ -369,7 +369,11 @@ const ProductDetails = ({ asin, marketplaceId }: ProductDetailsProps) => {
 
         {/* column 2 */}
         <div className="flex flex-col gap-4 col-span-2">
-          <TopSellers asin={asin} marketplaceId={marketplaceId} />
+          <TopSellers
+           asin={asin}
+            marketplaceId={marketplaceId} 
+             buyboxPrice={buyboxDetailsData?.data?.extra?.buybox_price}
+            />
           <CalculationResults
             profitabilityData={profitabilityData}
             currencyCode={currencyCode}

@@ -48,6 +48,12 @@ export const userApi = createApi({
         method: "GET",
       }),
     }),
+    getFeatureUsage: builder.query({
+      query: (featureKey) => ({
+        url: `/features/${featureKey}/check`,
+        method: "GET",
+      }),
+    }),
     markRead: builder.mutation({
       query: (id) => ({
         url: `customer/notifications/${id}`,
@@ -84,6 +90,7 @@ export const {
  useMarkReadMutation,
  useMarkAllReadMutation,
  useDeleteAllNotificationMutation,
- useDeleteSingleNotificationMutation
+ useDeleteSingleNotificationMutation,
+ useLazyGetFeatureUsageQuery
 
 } = userApi;

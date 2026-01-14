@@ -42,7 +42,7 @@ const menuData = [
     path: "/keepa",
     label: "Keepa",
     icon: HiOutlineChartBar,
-    comingSoon: true,
+    comingSoon: false,
   },
   {
     id: "5",

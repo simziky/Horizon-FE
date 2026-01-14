@@ -18,10 +18,22 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // Get query parameters from the request
+    const { searchParams } = new URL(req.url);
+    const startDate = searchParams.get('start_date');
+    const endDate = searchParams.get('end_date');
+
+    // Build query string for backend API
+    const queryParams = new URLSearchParams();
+    if (startDate) queryParams.append('start_date', startDate);
+    if (endDate) queryParams.append('end_date', endDate);
+    
+    const queryString = queryParams.toString();
+
     // Forward the request to the backend API
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
     
-    const response = await fetch(`${baseUrl}/upc-scanner`, {
+    const response = await fetch(`${baseUrl}/upc-scanner${queryString ? `?${queryString}` : ''}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${authCookie}`,

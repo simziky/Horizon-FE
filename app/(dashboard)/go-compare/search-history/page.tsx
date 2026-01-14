@@ -85,10 +85,9 @@ const SearchHistory = () => {
             // Clean URL with only essential parameters
             router.push(`/go-compare/quick-search?asin=${record.asinOrUpc}&marketplace_id=${marketplaceId}`)
         } else {
-            // For other searches (like product names), go to reverse-search
-            const storeNames = record.stores && record.stores.length > 0 ? 
-                (Array.isArray(record.stores) ? record.stores.map(store => typeof store === 'string' ? store : store.name).join(',') : record.stores) : '';
-            router.push(`/go-compare/reverse-search?queryName=${record.asinOrUpc}&store=${storeNames}`);
+            // For other searches (like seller searches), go to reverse-search
+            const marketplaceId = getMarketplaceId(record.country, record.countryId);
+            router.push(`/go-compare/reverse-search?seller_id=${encodeURIComponent(record.asinOrUpc)}&marketplace_id=${marketplaceId}`);
         }
     }
 
@@ -138,7 +137,7 @@ const SearchHistory = () => {
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-4 py-3">{record.results}</td>
+                                        <td className="px-4 py-3">{Math.min(record.results, 10)}</td>
                                     </tr>
                                 ))}
                             </tbody>

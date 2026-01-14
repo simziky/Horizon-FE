@@ -7,6 +7,7 @@ import {
 
 import {
   updateIdleTimeOut,
+  setShowPackageRestrictionModal, // Add this action
 } from "./slice/authSlice";
 
 import Cookies from "js-cookie";
@@ -87,6 +88,15 @@ export const baseQueryForAuth: BaseQueryFn<
 > = async (args, api, extraOptions) => {
   const result: any = await baseQuery(args, api, extraOptions);
   api.dispatch(updateIdleTimeOut());
+  
+  // Handle 403 - Package restriction
+  if (
+    (result.error?.status === 403 || result.error?.originalStatus === 403) &&
+    result.error?.data?.responseCode === "93"
+  ) {
+    api.dispatch(setShowPackageRestrictionModal(true));
+  }
+
   if (result.error?.status === 503 || result.error?.originalStatus === 503) {
     sessionStorage.removeItem("token");
     // window.location.href = "/underMaintenance";
@@ -98,4 +108,3 @@ export const baseQueryForAuth: BaseQueryFn<
   }
   return result;
 };
-

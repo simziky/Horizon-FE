@@ -43,6 +43,19 @@ export interface CountryResponse {
     meta: Record<string, unknown>[];
 }
 
+export interface Category {
+    id: number;
+    name: string;
+}
+
+export interface CategoriesResponse {
+    status: number;
+    message: string;
+    data: Category[];
+    responseCode: string;
+    meta: unknown[];
+}
+
 export interface ApiSearchResponseItem {
     id: number;
     asin_upc: string;

@@ -6,6 +6,7 @@ type Message = {
   type?: "analysis" | "chat" | "system" | "error" | "retry";
   timestamp: number;
   retryAction?: () => void;
+  data?: any
 };
 
 type ConversationState =

@@ -240,9 +240,8 @@ function DraggableRow({
 }
 
 export default function QuickSearchTable({ products, onRowClick }: ProductTableProps) {
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage] = useState(1);
   const itemsPerPage = 10;
-  const maxPages = 2;
 
   // Check if products are QuickSearchResult type
   const isQuickSearchResult = products.length > 0 && ('store_name' in products[0] || 'product_name' in products[0]);
@@ -252,15 +251,13 @@ export default function QuickSearchTable({ products, onRowClick }: ProductTableP
     ? products
     : [...(products as ProductObj[])].sort((a, b) => b.roi_percentage - a.roi_percentage)
 
-  // Calculate pagination
-  const totalItems = sortedProducts.length;
-  const totalPages = Math.min(Math.ceil(totalItems / itemsPerPage), maxPages);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-  const currentData = sortedProducts.slice(startIndex, endIndex);
+  // Only show first page (first 10 items)
+  const currentData = sortedProducts.slice(0, itemsPerPage);
+  const startIndex = 0;
+  const totalPages = 1;
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
+  const handlePageChange = () => {
+    // No-op since we only have one page
   };
 
   return (

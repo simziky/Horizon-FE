@@ -11,12 +11,13 @@ import { useState, useEffect } from "react";
 import SearchInput from "./SearchInput";
 import UserProfile from "./UserProfile";
 import { VscBell, VscBellDot } from "react-icons/vsc";
-import { Drawer } from "antd";
+import { Drawer, message } from "antd";
 import { HiMiniXMark } from "react-icons/hi2";
 import { BiCheck, BiTrash } from "react-icons/bi";
 import {
   useLazyGetNotificationsQuery,
   useMarkReadMutation,
+  useDeleteSingleNotificationMutation,
 } from "@/redux/api/user";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 
@@ -31,9 +32,14 @@ const DashNav = () => {
   const [loadingNotificationId, setLoadingNotificationId] = useState<
     string | null
   >(null);
+  const [deletingNotificationId, setDeletingNotificationId] = useState<
+    string | null
+  >(null);
   const [getNotification, { data: notificationsData }] =
     useLazyGetNotificationsQuery();
   const [markRead, { isLoading: isMarkingRead }] = useMarkReadMutation();
+  const [deleteSingleNotification, { isLoading: isDeletingNotification }] =
+    useDeleteSingleNotificationMutation();
   const [filterStatus, setFilterStatus] = useState<"all" | "unread" | "read">(
     "all"
   );
@@ -125,21 +131,32 @@ const DashNav = () => {
     try {
       setLoadingNotificationId(notificationId);
       await markRead(notificationId).unwrap();
+      message.success('marked read')
       // Refetch notifications after successful mark as read
       await getNotification({});
     } catch (error) {
       console.error("Failed to mark notification as read:", error);
+      message.error('failed')
       // Optionally show error toast/notification to user
     } finally {
       setLoadingNotificationId(null);
     }
   };
 
-  const handleDelete = (notificationId: string) => {
-    // TODO: Call API to delete notification
-    console.log("Delete notification:", notificationId);
-    // After API call, refetch notifications
-    getNotification({});
+  const handleDelete = async (notificationId: string) => {
+    try {
+      setDeletingNotificationId(notificationId);
+      await deleteSingleNotification(notificationId).unwrap();
+      message.success('message deleted')
+      // Refetch notifications after successful deletion
+      await getNotification({});
+    } catch (error) {
+      console.error("Failed to delete notification:", error);
+       message.error('failed')
+      // Optionally show error toast/notification to user
+    } finally {
+      setDeletingNotificationId(null);
+    }
   };
 
   return (
@@ -294,7 +311,7 @@ const DashNav = () => {
 
                   {/* Action Buttons - Show on Hover */}
                   {hoveredNotification === item.id && (
-                    <div className="flex gap-2 items-center absolute right-3 top-0">
+                    <div className="flex gap-2 items-center absolute right-3 top-1">
                       {item.status === "unread" && (
                         <button
                           onClick={() => handleMarkAsRead(item.id)}
@@ -319,15 +336,25 @@ const DashNav = () => {
                           )}
                         </button>
                       )}
-                      {/** 
-                    <button
-                      onClick={() => handleDelete(item.id)}
-                      className="p-2 hover:bg-gray-200 rounded-full transition-colors"
-                      title="Delete"
-                    >
-                      <BiTrash size={18} className="text-red-600" />
-                    </button>
-                    */}
+                      <button
+                        onClick={() => handleDelete(item.id)}
+                        disabled={deletingNotificationId === item.id}
+                        className={`p-2 hover:bg-red-50 rounded-full transition-colors ${
+                          deletingNotificationId === item.id
+                            ? "opacity-60 cursor-not-allowed"
+                            : ""
+                        }`}
+                        title="Delete"
+                      >
+                        {deletingNotificationId === item.id ? (
+                          <AiOutlineLoading3Quarters
+                            className="animate-spin text-red-600"
+                            size={18}
+                          />
+                        ) : (
+                          <BiTrash size={18} className="text-red-600" />
+                        )}
+                      </button>
                     </div>
                   )}
                 </div>

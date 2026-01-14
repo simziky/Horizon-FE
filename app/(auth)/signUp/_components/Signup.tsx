@@ -24,6 +24,7 @@ import {
   useLazyGetCountriesQuery,
   useUpdateUserMutation,
   useSignupMutation,
+  useCheckEmailMutation,
 } from "@/redux/api/auth";
 import { useFormik } from "formik";
 import { email, passwordSchema } from "@/lib/validationSchema"; // Adjust path as needed
@@ -89,7 +90,10 @@ const [subscribe, { isLoading }] = useSignupMutation();
     useLazyGetExperinceLevelQuery();
   const [getCountries, { data: countriesData }] = useLazyGetCountriesQuery();
   const [updateUser, { isLoading: isUpdatingUser }] = useUpdateUserMutation();
+const [checkEmail, { isLoading: isCheckingEmail }] = useCheckEmailMutation();
 
+// Add a new state for email error
+const [emailError, setEmailError] = useState<string>("");
   const [form, setForm] = useState({
     fullname: "",
     email: "",
@@ -438,37 +442,42 @@ const [subscribe, { isLoading }] = useSignupMutation();
   };
 
   const handleUpdateUser = async () => {
-    // Only require categories, amazonStatus, and country - Amazon connection is optional
-    if (!form.categories.length || !form.amazonStatus || !form.country) {
-      error("Please complete all required fields");
-      return;
-    }
+  // Only require categories, amazonStatus, and country - Amazon connection is optional
+  if (!form.categories.length || !form.amazonStatus || !form.country) {
+    error("Please complete all required fields");
+    return;
+  }
 
-    try {
-      const payload = {
-        category_ids: form.categories.map(cat => parseInt(cat)), // Convert string array to number array
-        experience_level_id: parseInt(form.amazonStatus),
-        country_id: parseInt(form.country),
-      };
+  try {
+    // Check if "all" is selected in the categories array
+    const hasAllSelected = form.categories.includes("all");
 
-      await updateUser(payload).unwrap();
+    const payload = {
+      category_ids: hasAllSelected 
+        ? ["all"] 
+        : form.categories.map(cat => parseInt(cat)), // Convert string array to number array
+      experience_level_id: parseInt(form.amazonStatus),
+      country_id: parseInt(form.country),
+    };
 
-      success("Profile updated successfully!");
+    await updateUser(payload).unwrap();
 
-      // Update both context and URL
-      setCurrentStep(7);
+    success("Profile updated successfully!");
 
-      // Update the URL to reflect the new step
-      const newUrl = new URL(window.location.href);
-      newUrl.searchParams.set("step", "7");
-      window.history.replaceState({}, "", newUrl.toString());
-    } catch (err: any) {
-      console.error("Update user error:", err);
-      error(
-        err?.data?.message || "Failed to update profile. Please try again."
-      );
-    }
-  };
+    // Update both context and URL
+    setCurrentStep(7);
+
+    // Update the URL to reflect the new step
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.set("step", "7");
+    window.history.replaceState({}, "", newUrl.toString());
+  } catch (err: any) {
+    console.error("Update user error:", err);
+    error(
+      err?.data?.message || "Failed to update profile. Please try again."
+    );
+  }
+};
 
   const handleSetPassword = async () => {
     if (!form.email || !form.password || !verificationToken) {
@@ -536,90 +545,99 @@ const [subscribe, { isLoading }] = useSignupMutation();
     }
   };
 
-  const handleNext = async () => {
-    // Validation for email step (Step 1)
-    if (currentStep === 1) {
-      const isValid = await emailFormik.validateForm();
-      if (Object.keys(isValid).length > 0) {
-        emailFormik.setTouched({ email: true });
-        return;
-      }
-
-       // Check if user needs to select a package
-    if (needsPackageSelection) {
-      // Redirect to packages page with current form data
-      const packageUrl = new URL('/packages', window.location.origin);
-      packageUrl.searchParams.set('email', form.email);
-      packageUrl.searchParams.set('fullname', form.fullname);
-      if (refCode) {
-        packageUrl.searchParams.set('ref', refCode);
-      }
-      
-      // Save current form state before redirecting
-      saveToSessionStorage(SESSION_KEYS.FORM_DATA, form);
-      
-      router.push(packageUrl.toString());
+ const handleNext = async () => {
+  // Validation for email step (Step 1)
+  if (currentStep === 1) {
+    const isValid = await emailFormik.validateForm();
+    if (Object.keys(isValid).length > 0) {
+      emailFormik.setTouched({ email: true });
       return;
     }
+
+    // ✅ Add email checking
+    try {
+      setEmailError(""); // Clear previous errors
+      await checkEmail({ email: form.email }).unwrap();
+      
+      // Email is available, continue with existing flow
+      if (needsPackageSelection) {
+        // Navigate to package selection page
+        router.push('/pricing'); // Adjust route as needed
+        return;
+      }
       
       if (selectedPlan && form.email && form.fullname) {
         confirmSubscription();
         return;
       }
-    }
-
-    // Validation for password step (Step 2)
-    if (currentStep === 2) {
-      if (verificationToken) {
-        const isValid = await passwordFormik.validateForm();
-        if (Object.keys(isValid).length > 0) {
-          passwordFormik.setTouched({ password: true, confirmPassword: true });
-          return;
-        }
-        handleSetPassword();
-        return;
+      
+    } catch (err: any) {
+      console.error("Email check error:", err);
+      
+      // ✅ Show modal for email exists error
+      if (err?.data?.responseCode === "91" || err?.status === 422) {
+        setShowEmailExistsModal(true);
+        return; // Don't proceed
       } else {
-        // Basic validation when no verification token
-        const isValid = await passwordFormik.validateForm();
-        if (Object.keys(isValid).length > 0) {
-          passwordFormik.setTouched({ password: true, confirmPassword: true });
-          return;
-        }
+        // For other errors, show inline error message
+        setEmailError("Failed to verify email. Please try again.");
+        return;
       }
     }
+  }
 
-    // If we're on the country step (step 6), call updateUser
-    if (currentStep === 6) {
-      handleUpdateUser();
+  // Validation for password step (Step 2)
+  if (currentStep === 2) {
+    if (verificationToken) {
+      const isValid = await passwordFormik.validateForm();
+      if (Object.keys(isValid).length > 0) {
+        passwordFormik.setTouched({ password: true, confirmPassword: true });
+        return;
+      }
+      handleSetPassword();
       return;
+    } else {
+      // Basic validation when no verification token
+      const isValid = await passwordFormik.validateForm();
+      if (Object.keys(isValid).length > 0) {
+        passwordFormik.setTouched({ password: true, confirmPassword: true });
+        return;
+      }
     }
+  }
 
-    // Basic validation for required fields per step
-    if (currentStep === 0 && !form.fullname.trim()) {
-      error("Please enter your full name");
-      return;
-    }
+  // If we're on the country step (step 6), call updateUser
+  if (currentStep === 6) {
+    handleUpdateUser();
+    return;
+  }
 
-    // If this is the final step, go to dashboard with loading state
-    if (currentStep === steps.length - 1) {
-      handleDashboardNavigation();
-      return;
-    }
+  // Basic validation for required fields per step
+  if (currentStep === 0 && !form.fullname.trim()) {
+    error("Please enter your full name");
+    return;
+  }
 
-    // Normal flow progression using context
-    nextStep();
+  // If this is the final step, go to dashboard with loading state
+  if (currentStep === steps.length - 1) {
+    handleDashboardNavigation();
+    return;
+  }
 
-    // Update URL to match the new step
-    const newStepValue = currentStep + 1;
-    const newUrl = new URL(window.location.href);
-    newUrl.searchParams.set("step", newStepValue.toString());
-    window.history.replaceState({}, "", newUrl.toString());
+  // Normal flow progression using context
+  nextStep();
 
-    // Fetch data when reaching step 3 if not already fetched
-    if (newStepValue >= 3 && !dataFetched) {
-      fetchRequiredData();
-    }
-  };
+  // Update URL to match the new step
+  const newStepValue = currentStep + 1;
+  const newUrl = new URL(window.location.href);
+  newUrl.searchParams.set("step", newStepValue.toString());
+  window.history.replaceState({}, "", newUrl.toString());
+
+  // Fetch data when reaching step 3 if not already fetched
+  if (newStepValue >= 3 && !dataFetched) {
+    fetchRequiredData();
+  }
+};
 
   const handleChange = (key: keyof typeof form, value: string | string[]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -675,29 +693,56 @@ const [subscribe, { isLoading }] = useSignupMutation();
     </div>,
 
     <div key="email" className="flex flex-col mb-16">
-      <StepHeader1 />
-      <div className="flex flex-col">
-        <input
-          type="email"
-          placeholder="Email"
-          value={form.email}
-          onChange={(e) => {
-            handleChange("email", e.target.value);
-            emailFormik.setFieldValue('email', e.target.value);
-          }}
-          onBlur={emailFormik.handleBlur}
-          name="email"
-          className={`w-full border-2 ${
-            emailFormik.touched.email && emailFormik.errors.email
-              ? 'border-red-500'
-              : 'border-[#EEEEEE]'
-          } focus:border-primary h-[65px] rounded-lg outline-none p-4`}
-        />
-        {emailFormik.touched.email && emailFormik.errors.email && (
-          <span className="text-red-500 text-sm mt-2">{emailFormik.errors.email}</span>
-        )}
+  <StepHeader1 />
+  <div className="flex flex-col">
+    <input
+      type="email"
+      placeholder="Email"
+      value={form.email}
+      onChange={(e) => {
+        handleChange("email", e.target.value);
+        emailFormik.setFieldValue('email', e.target.value);
+        setEmailError(""); // ✅ Clear error on type
+      }}
+      onBlur={emailFormik.handleBlur}
+      name="email"
+      className={`w-full border-2 ${
+        (emailFormik.touched.email && emailFormik.errors.email) || emailError
+          ? 'border-red-500'
+          : 'border-[#EEEEEE]'
+      } focus:border-primary h-[65px] rounded-lg outline-none p-4`}
+    />
+    
+    {/* Formik validation error */}
+    {emailFormik.touched.email && emailFormik.errors.email && (
+      <span className="text-red-500 text-sm mt-2">
+        {emailFormik.errors.email}
+      </span>
+    )}
+    
+    {/* ✅ API email error with action links */}
+    {emailError && (
+      <div className="mt-2">
+        <span className="text-red-500 text-sm">{emailError}</span>
+        <div className="flex gap-2 mt-2">
+          <button
+            onClick={handleGoToLogin}
+            className="text-xs text-[#3895F9] underline hover:text-[#2a7dd4]"
+          >
+            Go to Login
+          </button>
+          <span className="text-xs text-gray-400">or</span>
+          <button
+            onClick={handleResetPassword}
+            className="text-xs text-[#3895F9] underline hover:text-[#2a7dd4]"
+          >
+            Reset Password
+          </button>
+        </div>
       </div>
-    </div>,
+    )}
+  </div>
+</div>,
 
     // FIX: Restructured the password fields to correctly display validation messages
     <div key="password" className="flex flex-col mb-16">
@@ -866,46 +911,49 @@ const [subscribe, { isLoading }] = useSignupMutation();
 
     // Step 5 → Category Select (Updated for multiple selection)
     <div key="category" className="flex flex-col mb-16">
-      <span className="mb-8 block">
-        <h2 className="text-[#2E2E2E] text-xl md:text-2xl">
-          Hi, welcome {getFirstName()}
-        </h2>
-        <p className="text-[#4D4D4D] text-base mt-2">
-          Select categories of products you are most interested in selling.
-        </p>
-      </span>
+  <span className="mb-8 block">
+    <h2 className="text-[#2E2E2E] text-xl md:text-2xl">
+      Hi, welcome {getFirstName()}
+    </h2>
+    <p className="text-[#4D4D4D] text-base mt-2">
+      Select categories of products you are most interested in selling.
+    </p>
+  </span>
 
-      <Select
-        mode="multiple" // Enable multiple selection
-        className="sm:min-w-[280px] "
-        style={{ width: "100%" }}
-        placeholder="Select categories"
-        value={form.categories.length > 0 ? form.categories : undefined}
-        onChange={(value: string[]) => handleChange("categories", value)}
-        options={
-          categoriesData?.data?.map((category: any) => ({
-            value: category.id.toString(),
-            label: category.category_name,
-          })) || []
-        }
-        loading={!categoriesData}
-        maxTagCount="responsive" // Show tags responsively
-        showSearch // Enable search within options
-          filterOption={(input: string, option?: { label: string; value: string }) =>
+  <Select
+    mode="multiple"
+    className="sm:min-w-[280px]"
+    style={{ width: "100%" }}
+    placeholder="Select categories"
+    value={form.categories.length > 0 ? form.categories : undefined}
+    onChange={(value: string[]) => {
+      // If "all" is selected, clear other selections and only keep "all"
+      if (value.includes("all") && !form.categories.includes("all")) {
+        handleChange("categories", ["all"]);
+      } 
+      // If other categories are selected after "all" was selected, remove "all"
+      else if (value.length > 1 && value.includes("all")) {
+        handleChange("categories", value.filter(v => v !== "all"));
+      }
+      // Normal selection
+      else {
+        handleChange("categories", value);
+      }
+    }}
+    options={
+      categoriesData?.data?.map((category: any) => ({
+        value: category.id.toString(),
+        label: category.category_name,
+      })) || []
+    }
+    loading={!categoriesData}
+    maxTagCount="responsive"
+    showSearch
+    filterOption={(input: string, option?: { label: string; value: string }) =>
       (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
     }
-      />
-
-      <div className="mt-5 flex justify-end">
-        <Link
-          href=""
-          className="text-xs text-[#596375] underline flex items-center gap-1.5"
-        >
-          <HiOutlinePlayCircle size={20} />
-          Don't know what to pick? Watch a Tutorial.
-        </Link>
-      </div>
-    </div>,
+  />
+</div>,
 
     // Step 6 → Connect + Country
     <div key="connect-country" className="flex flex-col mb-16">
@@ -917,7 +965,7 @@ const [subscribe, { isLoading }] = useSignupMutation();
       </span>
 
       <Link href={amazonAuthUrl} target="_blank">
-        <button className="w-full border border-[#EDEDED] px-5 py-3 rounded-[10px] flex items-center gap-4 hover:bg-gray-50 transition-colors duration-200 mb-4">
+        <button className="w-full relative border border-[#EDEDED] px-5 py-3 rounded-[10px] flex items-center gap-4 hover:bg-gray-50 transition-colors duration-200 mb-4">
           <Image
             src="https://avatar.iran.liara.run/public/38"
             alt="Avatar"
@@ -937,6 +985,8 @@ const [subscribe, { isLoading }] = useSignupMutation();
           </span>
 
           <HiMiniArrowLongRight className="size-5 text-[#0F172A]" />
+
+          <span className=" text-primary text-[10px] p-[2px] bg-primary/10 rounded-lg border border-primary absolute top-2 right-3">Optional</span>
         </button>
       </Link>
       <Select
@@ -1036,8 +1086,11 @@ const [subscribe, { isLoading }] = useSignupMutation();
   const isButtonLoading = () => {
     // FIX: Use local state for checkout loading
     if (currentStep === 1 && selectedPlan) {
-      return isCheckoutLoading;
-    }
+    return isCheckoutLoading || isCheckingEmail; 
+  }
+  if (currentStep === 1) {
+    return isCheckingEmail; 
+  }
     if (currentStep === 2 && verificationToken) {
       return isSettingPassword;
     }
@@ -1052,9 +1105,9 @@ const [subscribe, { isLoading }] = useSignupMutation();
 
   const isButtonDisabled = () => {
     // Disable button if there are validation errors for current step
-    if (currentStep === 1) {
-      return !!(emailFormik.errors.email && emailFormik.touched.email);
-    }
+   if (currentStep === 1) {
+    return !!(emailFormik.errors.email && emailFormik.touched.email) || !!emailError; 
+  }
     if (currentStep === 2) {
       return !!(
         (passwordFormik.errors.password && passwordFormik.touched.password) ||
