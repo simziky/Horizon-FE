@@ -6,11 +6,12 @@ import { Tooltip } from "antd";
 import { HiOutlineUsers } from "react-icons/hi";
 import { MdOutlineInsertChartOutlined } from "react-icons/md";
 import { ImSpinner9 } from "react-icons/im";
-import { FaStar, FaStarHalfAlt, FaRegStar } from "react-icons/fa"; // <-- Import all needed star icons
+import { FaStar, FaStarHalfAlt, FaRegStar } from "react-icons/fa";
 import { GoDotFill } from "react-icons/go";
 import OffersAndSellerFeedback from "./offers-and-seller-feedback";
 import { CustomSelect as Select } from "@/lib/AntdComponents";
 import ProductDatePicker from "./datePicker";
+import { useAppSelector } from "@/redux/hooks";
 
 type BuyboxItem = {
   seller: string;
@@ -32,9 +33,10 @@ type BuyboxItem = {
 interface TopSellersProps {
   asin: string;
   marketplaceId: number;
+  buyboxPrice?: number; // Add this prop
 }
 
-const TopSellers = ({ asin, marketplaceId }: TopSellersProps) => {
+const TopSellers = ({ asin, marketplaceId, buyboxPrice }: TopSellersProps) => {
   const [active, setActive] = useState("offers");
   const [itemsToShow, setItemsToShow] = useState(3);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -44,6 +46,7 @@ const TopSellers = ({ asin, marketplaceId }: TopSellersProps) => {
     marketplaceId,
     itemAsin: asin,
   });
+  const { currencyCode, currencySymbol } = useAppSelector((state) => state.global) || { currencyCode: "USD" };
 
   const buyboxDetails: BuyboxItem[] = buyboxDetailsData?.data?.buybox ?? [];
 
@@ -55,7 +58,7 @@ const TopSellers = ({ asin, marketplaceId }: TopSellersProps) => {
     offers: sortedBuyboxDetails.map((offer, index) => ({
       id: index + 1,
       seller: offer.seller || "N/A",
-      rating: typeof offer.rating === 'number' ? offer.rating : 0, // Ensure rating is a number
+      rating: typeof offer.rating === 'number' ? offer.rating : 0,
       review_count: offer.review_count || "N/A",
       stock: offer.stock_quantity ?? "N/A",
       price: offer.listing_price ? `${offer.listing_price.toFixed(2)}` : "N/A",
@@ -104,7 +107,6 @@ const TopSellers = ({ asin, marketplaceId }: TopSellersProps) => {
     }
   };
 
-  // Helper function to render stars based on rating
   const renderStars = (rating: number) => {
     const stars = [];
     const fullStars = Math.floor(rating);
@@ -136,42 +138,50 @@ const TopSellers = ({ asin, marketplaceId }: TopSellersProps) => {
 
   return (
     <div className="rounded-xl bg-white p-4 lg:p-5">
-      <div className=" flex justify-between items-center flex-wrap gap-3">
+      <div className="flex justify-between items-center flex-wrap gap-3">
         {/* TABS */}
         <div className="flex items-center gap-3">
           <button
             onClick={() => setActive("offers")}
-            className={` ${
+            className={`${
               active === "offers"
                 ? "bg-primary text-white"
                 : "bg-[#F3F4F6] text-[#676A75]"
-            }  px-3 py-1.5 rounded-3xl  font-semibold text-sm w-max flex items-center gap-1.5`}
+            } px-3 py-1.5 rounded-3xl font-semibold text-sm w-max flex items-center gap-1.5`}
           >
-            <HiOutlineUsers className="size-5" />
+            <HiOutlineUsers className="size-4" />
             Offers
           </button>
           <button
             type="button"
-            className={` ${
+            className={`${
               active === "feedback"
                 ? "bg-primary text-white"
                 : "bg-[#F3F4F6] text-[#676A75]"
-            }  px-3 py-1.5 rounded-3xl  font-semibold text-sm w-max flex items-center gap-1.5`}
+            } px-3 py-1.5 rounded-3xl font-semibold text-sm w-max flex items-center gap-1.5`}
             onClick={() => setActive("feedback")}
           >
             <MdOutlineInsertChartOutlined className="size-5" />
             Seller Feedback
           </button>
+          
+          {/* BUYBOX PRICE DISPLAY */}
+          {buyboxPrice != null && (
+            <div className="bg-[#F0FDF4] border border-[#10B981] px-3 py-1 rounded-3xl font-semibold text-sm flex items-center gap-1.5">
+              <span className="text-[#10B981] text-xs">Buybox:</span>
+              <span className="text-[#059669] text-sm">{currencySymbol}{buyboxPrice.toFixed(2)}</span>
+            </div>
+          )}
         </div>
+        
         {/* FILTERS */}
         <div className="flex items-center gap-3">
-        
           <ProductDatePicker />
         </div>
       </div>
 
       {active === "offers" ? (
-        <div  className="mt-5 max-h-[300px] overflow-y-scroll show-scrollbar">
+        <div className="mt-5 max-h-[300px] overflow-y-scroll show-scrollbar">
           <table className="min-w-full text-left text-sm text-gray-700">
             <thead>
               <tr className="border-b bg-[#F7F7F7] font-medium">
@@ -197,7 +207,6 @@ const TopSellers = ({ asin, marketplaceId }: TopSellersProps) => {
                             className="cursor-pointer"
                           >
                             <div className="flex items-center gap-1.5">
-                             
                               <p className="truncate font-medium">{offer.seller} ({offer.review_count})</p>
                             </div>
                             {offer.leader && <span className="text-xs text-primary block mt-1">BuyBox Leader</span>}
@@ -205,7 +214,7 @@ const TopSellers = ({ asin, marketplaceId }: TopSellersProps) => {
                         </Tooltip>
                         {renderStars(offer.rating)}
                     </td>
-                    <td className="p-4">${offer.price}</td>
+                    <td className="p-4">{currencySymbol}{offer.price}</td>
                     <td className="p-4">{offer.stock}</td>
                     <td className="p-4">
                       <div className="flex gap-2 items-center">
@@ -237,11 +246,11 @@ const TopSellers = ({ asin, marketplaceId }: TopSellersProps) => {
       )}
 
       {/* FOOTER */}
-      <div className=" mt-5 px-5 flex justify-between items-center">
-        <div className=" flex items-start gap-3 flex-wrap">
-          {fbaCount > 0 && <button className=" h-[28px] px-3 bg-[#4D4D4D] text-white text-xs font-medium rounded-xl">FBA: {fbaCount}</button>}
-          {fbmCount > 0 && <button className=" h-[28px] px-3 bg-[#18CB96] text-white text-xs font-medium rounded-xl">FBM: {fbmCount}</button>}
-          {amzCount > 0 && <button className=" h-[28px] px-3 bg-orange-400 text-white text-xs font-medium rounded-xl">AMZ: {amzCount}</button>}
+      <div className="mt-5 px-5 flex justify-between items-center">
+        <div className="flex items-start gap-3 flex-wrap">
+          {fbaCount > 0 && <button className="h-[28px] px-3 bg-[#4D4D4D] text-white text-xs font-medium rounded-xl">FBA: {fbaCount}</button>}
+          {fbmCount > 0 && <button className="h-[28px] px-3 bg-[#18CB96] text-white text-xs font-medium rounded-xl">FBM: {fbmCount}</button>}
+          {amzCount > 0 && <button className="h-[28px] px-3 bg-orange-400 text-white text-xs font-medium rounded-xl">AMZ: {amzCount}</button>}
         </div>
 
         <div>

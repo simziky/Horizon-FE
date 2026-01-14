@@ -35,7 +35,12 @@ export const totanApi = createApi({
       query: (sessionId) => ({
         url: `totan-ai/session/${sessionId}`,
         method: 'GET',
-        
+      }),
+    }),
+    chatAllHistory: builder.query({
+      query: (size) => ({
+        url: `totan-ai/history?perPage=${size}`,
+        method: 'GET',
       }),
     }),
    
@@ -47,6 +52,8 @@ export const {
     useChatMutation,
     useAnalyzeMutation,
     useLazyPurchaseQuantityQuery,
-    useLazyChatHistoryQuery
+    useLazyChatHistoryQuery,
+    useChatAllHistoryQuery,
+    useLazyChatAllHistoryQuery
  
   } = totanApi; 

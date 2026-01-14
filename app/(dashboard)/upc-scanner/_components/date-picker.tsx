@@ -17,13 +17,13 @@ const MiniDatePicker = ({ selectedDate: propDate, onChange }: MiniDatePickerProp
   const pickerRef = useRef(null);
 
   const handlePrev = () => {
-    const newDate = selectedDate.subtract(1, "day");
+    const newDate = selectedDate.subtract(1, "month");
     setSelectedDate(newDate);
     onChange?.(newDate);
   };
   
   const handleNext = () => {
-    const newDate = selectedDate.add(1, "day");
+    const newDate = selectedDate.add(1, "month");
     setSelectedDate(newDate);
     onChange?.(newDate);
   };
@@ -50,7 +50,7 @@ const MiniDatePicker = ({ selectedDate: propDate, onChange }: MiniDatePickerProp
         >
           <MdOutlineCalendarMonth size={20} />
           <span className="text-md font-medium">
-            {selectedDate.format("MMM, DD")}
+            {selectedDate.format("MMM YYYY")}
           </span>
         </button>
 
@@ -79,10 +79,38 @@ const MiniDatePicker = ({ selectedDate: propDate, onChange }: MiniDatePickerProp
           }}
           onOpenChange={(nextOpen) => setOpen(nextOpen)}
           allowClear={false}
-          format="YYYY-MM-DD"
-          popupClassName="z-[9999]"
+          picker="month"
+          format="YYYY-MM"
+          popupClassName="z-[9999] upc-month-picker"
         />
       </div>
+      
+      {/* Custom styles for the month picker */}
+      <style jsx global>{`
+        .upc-month-picker .ant-picker-cell-in-view.ant-picker-cell-selected .ant-picker-cell-inner {
+          background-color: #18CB96 !important;
+        }
+        
+        .upc-month-picker .ant-picker-cell-in-view.ant-picker-cell-selected:hover .ant-picker-cell-inner {
+          background-color: #16b885 !important;
+        }
+        
+        .upc-month-picker .ant-picker-cell:hover:not(.ant-picker-cell-selected) .ant-picker-cell-inner {
+          background-color: rgba(24, 203, 150, 0.1) !important;
+        }
+        
+        .upc-month-picker .ant-picker-header-view button:hover {
+          color: #18CB96 !important;
+        }
+        
+        .upc-month-picker .ant-picker-today-btn {
+          color: #18CB96 !important;
+        }
+        
+        .upc-month-picker .ant-picker-today-btn:hover {
+          color: #16b885 !important;
+        }
+      `}</style>
     </div>
   );
 };

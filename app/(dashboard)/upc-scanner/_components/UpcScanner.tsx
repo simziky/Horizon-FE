@@ -1,12 +1,12 @@
 "use client";
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { MdOutlineInsertChartOutlined } from "react-icons/md";
 import Header from "./Header";
 import ScanResultsTable from "./scan-results-table";
 import { HiOutlineCloudArrowUp } from "react-icons/hi2";
-import ConfirmScanModal from "./confirm-scan-modal";
+
 import ScanDetailsTable from "./scan-details-table";
 import { CgClose } from "react-icons/cg";
 import MiniDatePicker from "./date-picker";
@@ -14,6 +14,7 @@ import { IoSearchOutline } from "react-icons/io5";
 import { message, Modal } from "antd";
 import dayjs from "dayjs";
 import debounce from "lodash/debounce";
+import { useLazyGetFeatureUsageQuery } from "@/redux/api/user";
 
 type Tab = "upc" | "new";
 
@@ -93,7 +94,7 @@ interface ScanDetailsData extends ScanResult {
 
 const UpcScanner = () => {
   const [activeTab, setActiveTab] = useState<Tab>("upc");
-  const [isModalOpen, setIsModalOpen] = useState(false);
+
   const [selectedProductId, setSelectedProductId] = useState<string | null>(
     null
   );
@@ -110,6 +111,14 @@ const UpcScanner = () => {
   const [filterDate, setFilterDate] = useState<dayjs.Dayjs | null>(dayjs());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const scanDetailsCache = useRef<Map<number, ScanDetailsData>>(new Map());
+  const pendingRequests = useRef<Set<number>>(new Set());
+
+  const [checkUsage, { data, isLoading:UsageLoading, error }] = useLazyGetFeatureUsageQuery()
+
+  useEffect(()=>{
+    checkUsage('upc_scanner')
+  }, [])
 
   // Handle clicking outside dropdown to close it
   useEffect(() => {
@@ -137,75 +146,26 @@ const UpcScanner = () => {
   // Update debounced search term when searchTerm changes
   useEffect(() => {
     debouncedSearch(searchTerm);
-    // Capture the current value of the ref to avoid stale closures in cleanup
     const currentDebouncedFn = debouncedFn.current;
     return () => {
       currentDebouncedFn.cancel();
     };
   }, [searchTerm, debouncedSearch]);
   
+  // Memoize filtered scan results to avoid redundant filtering
+  const filteredScanResults = useMemo(() => {
+    return scanResults.filter(scan => {
+      const matchesSearch = debouncedSearchTerm === "" || 
+        scan.product_name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        (scan.product_id && scan.product_id.toLowerCase().includes(debouncedSearchTerm.toLowerCase()));
+      return matchesSearch;
+    });
+  }, [scanResults, debouncedSearchTerm]);
+  
   // Fetch scan results from API
   const [isLoading, setIsLoading] = useState(false);
   // Using retryCount to trigger refetching when retry is clicked
   const [retryCount, setRetryCount] = useState(0);
-  const [restartingScanId, setRestartingScanId] = useState<number | null>(null);
-  
-  // Function to fetch all scan results
-  const fetchScanResults = async () => {
-    setIsLoading(true);
-    
-    try {
-      const response = await fetch('/api/upc-scanner', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache'
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error(`Expected JSON response but got ${contentType}`);
-      }
-      
-      const data: ApiResponse = await response.json();
-      
-      if (data.status === 200) {
-        setScanResults(data.data);
-        setRetryCount(0); // Reset retry count on success
-      } else {
-        throw new Error(data.message || 'Failed to fetch scan results');
-      }
-    } catch (err: unknown) {
-      let errorMessage = 'An error occurred while fetching scan results';
-      
-      if (err instanceof SyntaxError) {
-        errorMessage = 'Invalid response format from server';
-      } else if (err instanceof Error && err.name === 'AbortError') {
-        errorMessage = 'Request timed out. Please try again.';
-      } else if (err instanceof Error) {
-        errorMessage = err.message;
-      }
-      
-      message.error({ content: errorMessage, key: 'fetchError' });
-      
-      if (retryCount < 3) {
-        setTimeout(() => setRetryCount(retryCount + 1), 3000 * (retryCount + 1));
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Fetch scan results on component mount and when retryCount changes
-  useEffect(() => {
-    fetchScanResults();
-  }, [retryCount]);
   
   useEffect(() => {
     const controller = new AbortController();
@@ -217,7 +177,18 @@ const UpcScanner = () => {
       setIsLoading(true);
       
       try {
-        const response = await fetch('/api/upc-scanner', {
+        // Build query parameters with date range
+        const params = new URLSearchParams();
+        if (filterDate) {
+          const startDate = filterDate.startOf('month').format('YYYY-MM-DD');
+          const endDate = filterDate.endOf('month').format('YYYY-MM-DD');
+          params.append('start_date', startDate);
+          params.append('end_date', endDate);
+        }
+        
+        const url = `/api/upc-scanner${params.toString() ? `?${params.toString()}` : ''}`;
+        
+        const response = await fetch(url, {
           signal: controller.signal,
           // Add cache control headers to prevent stale data
           headers: {
@@ -293,7 +264,7 @@ const UpcScanner = () => {
       isMounted = false;
       controller.abort();
     };
-  }, [retryCount]); // Retry when retryCount changes
+  }, [retryCount, filterDate]); // Retry when retryCount or filterDate changes
   
   // Handle refreshing a scan with retry mechanism
   const handleRefreshScan = async (scanId: number, retryAttempt = 0, maxRetries = 3) => {
@@ -327,6 +298,9 @@ const UpcScanner = () => {
             scan.id === scanId ? { ...scan, ...data.data } : scan
           )
         );
+        
+        // Invalidate cache for this scan
+        scanDetailsCache.current.delete(scanId);
         
         // If this scan is currently selected, update the details too
         if (selectedProductId === scanId.toString()) {
@@ -379,8 +353,9 @@ const UpcScanner = () => {
   
   // Handle restarting a scan with retry mechanism
   const handleRestartScan = async (scanId: number) => {
-    setRestartingScanId(scanId);
     try {
+      message.loading({ content: 'Restarting scan...', key: 'restartScan' });
+      
       const response = await fetch(`/api/upc-scanner/${scanId}/restart`, {
         method: 'POST',
         headers: {
@@ -395,7 +370,7 @@ const UpcScanner = () => {
       const result = await response.json();
 
       if (result.status === 200) {
-        await fetchScanResults();
+        setRetryCount(prev => prev + 1); // Trigger refetch
         message.success({
           content: 'Scan Restarted',
           key: 'restartScan'
@@ -409,8 +384,6 @@ const UpcScanner = () => {
         content: 'Failed to restart scan. Please try again.',
         key: 'restartScan'
       });
-    } finally {
-      setRestartingScanId(null);
     }
   };
   
@@ -458,6 +431,9 @@ const UpcScanner = () => {
               prevResults.filter(scan => scan.id !== scanId)
             );
             
+            // Invalidate cache for this scan
+            scanDetailsCache.current.delete(scanId);
+            
             // If this scan is currently selected, clear the details
             if (selectedProductId === scanId.toString()) {
               setSelectedProductId(null);
@@ -474,7 +450,7 @@ const UpcScanner = () => {
     });
   };
 
-  // Fetch scan details when a product is selected with lazy loading
+  // Fetch scan details when a product is selected (optimized with caching)
   useEffect(() => {
     // Track if the component is still mounted
     let isMounted = true;
@@ -486,85 +462,55 @@ const UpcScanner = () => {
         return;
       }
       
+      const scanId = parseInt(selectedProductId);
+      
+      // Check cache first
+      const cached = scanDetailsCache.current.get(scanId);
+      if (cached) {
+        setScanDetails(cached);
+        return;
+      }
+      
+      // Prevent duplicate requests
+      if (pendingRequests.current.has(scanId)) {
+        return;
+      }
+      
+      pendingRequests.current.add(scanId);
       setIsLoadingDetails(true);
+      
       try {
-        // Use the API endpoint with /api prefix and abort signal for cancellation
         const response = await fetch(`/api/upc-scanner/${selectedProductId}`, {
           signal: controller.signal
         });
         
-        // Check if response is OK
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
         
-        // Check if response is JSON
         const contentType = response.headers.get("content-type");
         if (!contentType || !contentType.includes("application/json")) {
           throw new Error("Response is not JSON");
         }
         
-        // Process the response only if component is still mounted
         if (isMounted) {
           const data: ScanDetailsResponse = await response.json();
           
-          // Implement lazy loading by processing data in chunks
-          // First set basic details immediately
-          setScanDetails(prevDetails => ({
-            ...data.data,
-            // Keep existing products if any until we process the new ones
-            products: prevDetails?.products || []
-          }));
+          // Cache the result
+          scanDetailsCache.current.set(scanId, data.data);
           
-          // Then process products in batches asynchronously
-          if (data.data.products && data.data.products.length > 0) {
-            // Process in batches of 10 products at a time
-            const batchSize = 10;
-            for (let i = 0; i < data.data.products.length; i += batchSize) {
-              if (!isMounted) break; // Stop if component unmounted
-              
-              const batch = data.data.products.slice(i, i + batchSize);
-              
-              // Update state with each batch
-              setScanDetails(prevDetails => {
-                if (!prevDetails) return data.data;
-                
-                const existingProducts = prevDetails.products || [];
-                const newProducts = [...existingProducts];
-                
-                // Add new batch products
-                batch.forEach(product => {
-                  const index = newProducts.findIndex(p => p.asin_upc === product.asin_upc);
-                  if (index >= 0) {
-                    newProducts[index] = product;
-                  } else {
-                    newProducts.push(product);
-                  }
-                });
-                
-                return {
-                  ...prevDetails,
-                  products: newProducts
-                };
-              });
-              
-              // Small delay to prevent UI blocking
-              if (i + batchSize < data.data.products.length) {
-                await new Promise(resolve => setTimeout(resolve, 10));
-              }
-            }
-          }
+          // Set data directly (no batching needed)
+          setScanDetails(data.data);
         }
       } catch (err: unknown) {
         if (err instanceof SyntaxError) {
-          // JSON parsing error
           message.error("Invalid response format from server");
         } else if (err instanceof Error && err.name !== 'AbortError') {
-          // Other fetch errors (excluding aborts)
           message.error("Failed to fetch scan details");
         }
         console.error("Error fetching scan details:", err);
       } finally {
+        pendingRequests.current.delete(scanId);
         if (isMounted) {
           setIsLoadingDetails(false);
         }
@@ -573,7 +519,6 @@ const UpcScanner = () => {
 
     fetchScanDetails();
     
-    // Cleanup function to handle component unmounting
     return () => {
       isMounted = false;
       controller.abort();
@@ -598,11 +543,6 @@ const UpcScanner = () => {
   };
 
   const handleStartNewScan = () => {
-    setIsModalOpen(true);
-  };
-
-  const handleConfirmScan = () => {
-    setIsModalOpen(false);
     setActiveTab("new");
   };
 
@@ -794,11 +734,7 @@ const UpcScanner = () => {
               </div>
             )}
 
-            <ConfirmScanModal
-              isOpen={isModalOpen}
-              onClose={() => setIsModalOpen(false)}
-              onConfirm={handleConfirmScan}
-            />
+
           </div>
 
           {activeTab === "upc" && !selectedProductId && (
@@ -829,29 +765,24 @@ const UpcScanner = () => {
         {/* UPC Scanner Tab */}
         {activeTab === "upc" && (
           <div className="flex flex-col gap-4">
+            <div className=" flex items-center gap-5">
             <p className="text-[#8C94A3] text-sm font-medium">
               {selectedProductId 
                 ? `${scanDetails?.products?.length || 0} Products found` 
-                : (() => {
-                    const filteredResults = scanResults.filter(scan => {
-                      // Apply debounced search term filter
-                      const matchesSearch = debouncedSearchTerm === "" || 
-                        scan.product_name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-                        (scan.product_id && scan.product_id.toLowerCase().includes(debouncedSearchTerm.toLowerCase()));
-                      
-                      // Apply date filter if selected
-                      const matchesDate = !filterDate || 
-                        dayjs(scan.last_seen).format('YYYY-MM-DD') === filterDate.format('YYYY-MM-DD');
-                      
-                      return matchesSearch && matchesDate;
-                    });
-                    return filteredResults.length > 0 ? `${filteredResults.length} Searches found` : "No searches found";
-                  })()
+                : filteredScanResults.length > 0 
+                  ? `${filteredScanResults.length} Searches found` 
+                  : "No searches found"
               }
             </p>
+            <div className=" text-[#8C94A3] text-sm font-medium border rounded-xl p-1 px-3">
+              <span>
+               Scans Left: {(data?.data?.used || 0) + "/" + (data?.data?.limit || 0)}
+                </span>
+            </div>
+            </div>
             {selectedProductId ? (
               <div className="">
-                <div className="bg-[#F3F4F6] rounded-t-xl grid lg:grid-cols-[639px_1fr] lg:divide-x-2 divide-gray-200 border border-b-0 border-gray-200">
+                <div className="bg-[#F3F4F6] rounded-t-xl grid lg:grid-cols-[456px_1fr] lg:divide-x-2 divide-gray-200 border border-b-0 border-gray-200">
                   <div className="hidden lg:block p-8" />
                   <div className="p-6 lg:p-8 text-[#596375] text-sm font-semibold text-center lg:text-start">
                     Fees and Profit
@@ -868,18 +799,7 @@ const UpcScanner = () => {
                 onRefreshScan={handleRefreshScan}
                 onRestartScan={handleRestartScan}
                 onDeleteScan={handleDeleteScan}
-                scanResults={scanResults.filter(scan => {
-                  // Apply debounced search term filter
-                  const matchesSearch = debouncedSearchTerm === "" || 
-                    scan.product_name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-                    (scan.product_id && scan.product_id.toLowerCase().includes(debouncedSearchTerm.toLowerCase()));
-                  
-                  // Apply date filter if selected
-                  const matchesDate = !filterDate || 
-                    dayjs(scan.last_seen).format('YYYY-MM-DD') === filterDate.format('YYYY-MM-DD');
-                  
-                  return matchesSearch && matchesDate;
-                })}
+                scanResults={filteredScanResults}
                 isLoading={isLoading}
               />
             )}

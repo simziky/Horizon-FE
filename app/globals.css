@@ -48,10 +48,36 @@ img {
 .animation-delay-0 {
   animation-delay: 0s;
 }
+
+/* Show scrollbars for specific elements */
+.scrollbar-visible {
+  -ms-overflow-style: auto; /* Internet Explorer 10+ */
+  scrollbar-width: thin; /* Firefox */
+}
+
+.scrollbar-visible::-webkit-scrollbar {
+  display: block; /* Safari and Chrome */
+  height: 8px;
+  width: 8px;
+}
+
+.scrollbar-visible::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.scrollbar-visible::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.scrollbar-visible::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
 .animation-delay-200 {
   animation-delay: 0.2s;
 }
-.animation-delay-200 {
+.animation-delay-300 {
   animation-delay: 0.3s;
 }
 .animation-delay-400 {
@@ -70,4 +96,66 @@ img {
 .custom-select-dropdown {
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+/* Three-dot loading animation */
+.three-dot-loader {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.three-dot-loader .dot {
+  width: 4px;
+  height: 4px;
+  background-color: #18cb96;
+  border-radius: 50%;
+  animation: threeDotBounce 1.4s infinite ease-in-out;
+}
+
+.three-dot-loader .dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.three-dot-loader .dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+.three-dot-loader .dot:nth-child(3) {
+  animation-delay: 0s;
+}
+
+@keyframes threeDotBounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Country dropup scrollbar */
+.country-dropup::-webkit-scrollbar {
+  width: 6px;
+}
+
+.country-dropup::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.country-dropup::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 3px;
+}
+
+.country-dropup::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
+}
+
+.country-dropup {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e0 #f1f1f1;
 }

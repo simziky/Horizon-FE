@@ -14,6 +14,40 @@ import {
 } from "react-icons/hi2";
 import * as XLSX from 'xlsx';
 
+// Product interfaces for download
+interface ProductCost {
+  amount: string | null;
+  currency: string;
+}
+
+interface ProductDetails {
+  asin: string | null;
+  title: string | null;
+  fba_fee: string | null;
+  referral_fee: string | null;
+  storage_fee: string | null;
+  net_profit: string | null;
+  net_margin: string | null;
+  roi: string | null;
+  potential_winner: string | null;
+  rank: string | null;
+  amazon_instock_rate: string | null;
+  number_of_fba: string | null;
+  number_of_fbm: string | null;
+  number_of_amz: string | null;
+  estimated_monthly_sales: string | null;
+  buy_box_equity: string | null;
+  out_of_stock: number | null;
+  dominant_seller: string | null;
+}
+
+interface ScanProduct {
+  asin_upc: string;
+  product_cost: ProductCost;
+  buy_box_price: ProductCost;
+  product_details: ProductDetails;
+}
+
 interface ScanResultsTableProps {
   onDetailsClick?: (productId: string) => void;
   onRefreshScan?: (scanId: number) => void;
@@ -54,68 +88,189 @@ const ScanResultsTable: FC<ScanResultsTableProps> = ({ onDetailsClick, onRefresh
   const [refreshingId, setRefreshingId] = useState<number | null>(null);
   // Store interval IDs for cleanup
   const intervalRef = useRef<{[key: number]: NodeJS.Timeout}>({});
+  // Cache for downloaded scan details
+  const downloadCache = useRef<Map<number, { data: { products: ScanProduct[] } }>>(new Map());
   
-  // Auto-refresh pending and in-progress scans every minute
+  // Auto-refresh pending and in-progress scans (optimized - max 5 concurrent)
   useEffect(() => {
     // Clear previous intervals
     Object.values(intervalRef.current).forEach(interval => clearInterval(interval));
     intervalRef.current = {};
     
-    // Set up new intervals for pending and in-progress scans
-    scanResults.forEach(scan => {
-      if (scan.status === 'pending' || scan.status === 'in-progress') {
-        const scanId = scan.id;
-        // Set up interval to refresh every 30 seconds (30000ms)
-        const intervalId = setInterval(() => {
-          onRefreshScan?.(scanId);
-        }, 30000);
-        
-        // Store interval ID for cleanup
-        intervalRef.current[scanId] = intervalId;
-      }
+    // Get pending/in-progress scans, limit to 5 most recent
+    const pendingScans = scanResults
+      .filter(scan => scan.status === 'pending' || scan.status === 'in-progress')
+      .sort((a, b) => new Date(b.last_seen).getTime() - new Date(a.last_seen).getTime())
+      .slice(0, 5);
+    
+    // Set up intervals only for limited scans
+    pendingScans.forEach(scan => {
+      const scanId = scan.id;
+      // Set up interval to refresh every 30 seconds (30000ms)
+      const intervalId = setInterval(() => {
+        onRefreshScan?.(scanId);
+      }, 30000);
+      
+      // Store interval ID for cleanup
+      intervalRef.current[scanId] = intervalId;
     });
     
     // Cleanup function
     return () => {
       Object.values(intervalRef.current).forEach(interval => clearInterval(interval));
+      intervalRef.current = {};
     };
   }, [scanResults, onRefreshScan]);
   
-  // Function to download scan results as Excel file
-  const handleDownloadExcel = (record: ProductData) => {
+  // Function to download scan results as Excel file with full product details (optimized with caching)
+  const handleDownloadExcel = async (record: ProductData) => {
     // Find the original scan result data
     const scanData = scanResults.find(scan => scan.id.toString() === record.key);
     
     if (!scanData) return;
     
-    // Create worksheet data
-    const wsData = [
-      // Headers
-      ['UPC Scanner Results'],
-      [''],
-      ['Scan Details'],
-      ['Search Name', scanData.product_name],
-      ['UPC / EAN', scanData.product_id || ''],
-      ['Items Count', scanData.items_count.toString()],
-      ['Products Found', scanData.products_found.toString()],
-      ['Last Scan', new Date(scanData.last_seen).toLocaleDateString()],
-      ['Last Uploaded', new Date(scanData.last_uploaded).toLocaleDateString()],
-      ['Status', scanData.status],
-      ['Marketplace ID', scanData.marketplace_id]
-    ];
-    
-    // Create worksheet
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-    
-    // Create workbook
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Scan Results');
-    
-    // Generate filename
-    const fileName = `UPC_Scan_${scanData.product_name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
-    
-    // Write and download
-    XLSX.writeFile(wb, fileName);
+    try {
+      // Show loading message
+      const { message } = await import('antd');
+      message.loading({ content: 'Preparing download...', key: 'downloadExcel' });
+      
+      let data;
+      let products;
+      
+      // Check cache first
+      const cached = downloadCache.current.get(scanData.id);
+      if (cached) {
+        data = cached;
+        products = cached.data.products || [];
+      } else {
+        // Fetch full scan details with product data
+        const response = await fetch(`/api/upc-scanner/${scanData.id}`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch scan details');
+        }
+        
+        data = await response.json();
+        products = data.data.products || [];
+        
+        // Cache the result for 5 minutes
+        downloadCache.current.set(scanData.id, data);
+        setTimeout(() => downloadCache.current.delete(scanData.id), 5 * 60 * 1000);
+      }
+      
+      // Create workbook
+      const wb = XLSX.utils.book_new();
+      
+      // Sheet 1: Scan Summary
+      const summaryData = [
+        ['UPC Scanner Results'],
+        [''],
+        ['Scan Details'],
+        ['Search Name', scanData.product_name],
+        ['UPC / EAN', scanData.product_id || ''],
+        ['Items Count', scanData.items_count.toString()],
+        ['Products Found', scanData.products_found.toString()],
+        ['Last Scan', new Date(scanData.last_seen).toLocaleDateString()],
+        ['Last Uploaded', new Date(scanData.last_uploaded).toLocaleDateString()],
+        ['Status', scanData.status],
+        ['Marketplace ID', scanData.marketplace_id]
+      ];
+      
+      const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+      XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary');
+      
+      // Sheet 2: Product Details
+      if (products.length > 0) {
+        const productHeaders = [
+          'UPC / EAN',
+          'Product Cost',
+          'Buy Box Price',
+          'FBA Fee',
+          'Referral Fee',
+          'Storage Fee',
+          'Net Profit',
+          'Net Margin',
+          'ROI',
+          'Potential Winner',
+          'Rank',
+          'Amazon Instock Rate',
+          '# FBA Sellers',
+          '# FBM Sellers',
+          '# AMZ Sellers',
+          'Est. Monthly Sold',
+          'Buy Box Equity',
+          'Out of Stock',
+          'Dominant Seller',
+          'ASIN',
+          'Title'
+        ];
+        
+        const productRows = products.map((product: ScanProduct) => [
+          product.asin_upc || '',
+          product.product_cost?.amount ? `${product.product_cost.currency}${product.product_cost.amount}` : '',
+          product.buy_box_price?.amount ? `${product.buy_box_price.currency}${product.buy_box_price.amount}` : '',
+          product.product_details?.fba_fee || '',
+          product.product_details?.referral_fee || '',
+          product.product_details?.storage_fee || '',
+          product.product_details?.net_profit || '',
+          product.product_details?.net_margin || '',
+          product.product_details?.roi || '',
+          product.product_details?.potential_winner || '',
+          product.product_details?.rank || '',
+          product.product_details?.amazon_instock_rate || '',
+          product.product_details?.number_of_fba || '',
+          product.product_details?.number_of_fbm || '',
+          product.product_details?.number_of_amz || '',
+          product.product_details?.estimated_monthly_sales || '',
+          product.product_details?.buy_box_equity || '',
+          product.product_details?.out_of_stock || '',
+          product.product_details?.dominant_seller || '',
+          product.product_details?.asin || '',
+          product.product_details?.title || ''
+        ]);
+        
+        const wsProducts = XLSX.utils.aoa_to_sheet([productHeaders, ...productRows]);
+        
+        // Set column widths for better readability
+        wsProducts['!cols'] = [
+          { wch: 15 }, // UPC / EAN
+          { wch: 12 }, // Product Cost
+          { wch: 12 }, // Buy Box Price
+          { wch: 10 }, // FBA Fee
+          { wch: 12 }, // Referral Fee
+          { wch: 12 }, // Storage Fee
+          { wch: 12 }, // Net Profit
+          { wch: 12 }, // Net Margin
+          { wch: 10 }, // ROI
+          { wch: 15 }, // Potential Winner
+          { wch: 10 }, // Rank
+          { wch: 18 }, // Amazon Instock Rate
+          { wch: 14 }, // # FBA Sellers
+          { wch: 14 }, // # FBM Sellers
+          { wch: 14 }, // # AMZ Sellers
+          { wch: 16 }, // Est. Monthly Sold
+          { wch: 15 }, // Buy Box Equity
+          { wch: 12 }, // Out of Stock
+          { wch: 15 }, // Dominant Seller
+          { wch: 12 }, // ASIN
+          { wch: 40 }  // Title
+        ];
+        
+        XLSX.utils.book_append_sheet(wb, wsProducts, 'Products');
+      }
+      
+      // Generate filename
+      const fileName = `UPC_Scan_${scanData.product_name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      
+      // Write and download
+      XLSX.writeFile(wb, fileName);
+      
+      message.success({ content: 'Download complete!', key: 'downloadExcel' });
+    } catch (error) {
+      console.error('Error downloading Excel:', error);
+      const { message } = await import('antd');
+      message.error({ content: 'Failed to download. Please try again.', key: 'downloadExcel' });
+    }
   };
   
   // Convert API scan results to table format

@@ -77,7 +77,7 @@ const ProfitabilityCalculator = forwardRef<
   const [isCalculating, setIsCalculating] = useState(false);
   const [isValidExpression, setIsValidExpression] = useState(true);
 
-  const { currencyCode } = useAppSelector((state) => state.global) || { currencyCode: "USD" };
+  const { currencyCode, currencySymbol } = useAppSelector((state) => state.global) || { currencyCode: "USD" };
   const [calculateProfitability] = useCalculateProfitablilityMutation();
 
   const { data: buyboxDetailsData, isLoading: isLoadingBuyboxDetails } = useGetBuyboxDetailsQuery({
@@ -313,7 +313,7 @@ const ProfitabilityCalculator = forwardRef<
 
   const formatValue = (value: string | number | null | undefined): string => {
     if (value === null || value === undefined) return "N/A";
-    if (typeof value === "number") return `$${value.toFixed(2)}`;
+    if (typeof value === "number") return `${currencySymbol}${value.toFixed(2)}`;
     return value;
   };
 
@@ -363,7 +363,7 @@ const ProfitabilityCalculator = forwardRef<
             </AntTooltip>
           </StrikethroughIfNull>
           <StrikethroughIfNull value={minProfit}>
-            <span className="text-[#596375]">${minProfit.toFixed(2)}</span>
+            <span className="text-[#596375]">{currencySymbol}{minProfit.toFixed(2)}</span>
           </StrikethroughIfNull>
         </div>
         <div className="border-t pt-2 font-semibold flex gap-4 items-center justify-between text-[#8C94A3] text-sm">
@@ -373,7 +373,7 @@ const ProfitabilityCalculator = forwardRef<
           >
             <span>Maximum Cost</span>
           </AntTooltip>
-          <span className="text-[#596375]">${maxCost.toFixed(2)}</span>
+          <span className="text-[#596375]">{currencySymbol}{maxCost.toFixed(2)}</span>
         </div>
 
         {/* Additional metrics */}
@@ -437,7 +437,7 @@ const ProfitabilityCalculator = forwardRef<
           <span className="flex items-center gap-2">
             <span className="w-[45px] h-2.5 rounded-3xl bg-gradient-to-r from-[#1499FF] to-[#0C5C99]" />
             <StrikethroughIfNull value={breakEvenPrice}>
-              <span className="text-[#596375]">${breakEvenPrice.toFixed(2)}</span>
+              <span className="text-[#596375]">{currencySymbol}{breakEvenPrice.toFixed(2)}</span>
             </StrikethroughIfNull>
           </span>
         </div>
@@ -453,7 +453,7 @@ const ProfitabilityCalculator = forwardRef<
           <span className="flex items-center gap-2">
             <span className="w-16 h-2.5 rounded-3xl bg-gradient-to-r from-[#6AD8DE] to-[#397578]" />
             <StrikethroughIfNull value={estimatedPayout}>
-              <span className="text-[#596375]">${estimatedPayout.toFixed(2)}</span>
+              <span className="text-[#596375]">{currencySymbol}{estimatedPayout.toFixed(2)}</span>
             </StrikethroughIfNull>
           </span>
         </div>
@@ -503,7 +503,7 @@ const ProfitabilityCalculator = forwardRef<
           >
             <span>Total Fees</span>
           </AntTooltip>
-          <span className="text-[#596375]">${totalFees.toFixed(2)}</span>
+          <span className="text-[#596375]">{currencySymbol}{totalFees.toFixed(2)}</span>
         </div>
       </div>
     ),
