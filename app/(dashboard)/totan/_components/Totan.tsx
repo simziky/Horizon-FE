@@ -9,7 +9,7 @@ import { Drawer, Spin, Image } from "antd"; // Import Ant Design components
 import { 
   useChatMutation,
   useAnalyzeMutation,
-  useChatAllHistoryQuery,
+  //useChatAllHistoryQuery,
   useLazyChatAllHistoryQuery,
  // You'll need to add this to your API
 } from "./../../../../redux/api/totanAi";
@@ -54,6 +54,7 @@ type HistoryItem = {
   updated_at: string;
 };
 
+/**
 type HistoryResponse = {
   status: number;
   message: string;
@@ -61,6 +62,7 @@ type HistoryResponse = {
   meta: any;
   responseCode: string;
 };
+ */
 
 /**
  * Enhanced typing effect hook that simulates natural typing for the first 30-40 seconds,
