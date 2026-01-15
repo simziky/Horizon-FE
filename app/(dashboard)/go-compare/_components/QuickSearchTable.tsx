@@ -2,11 +2,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { useDraggable } from "@dnd-kit/core"
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import Image from "next/image"
 import placeholder from '../../../../public/assets/images/gocompare/placeholder.png'
 import { ProductObj, QuickSearchResult } from "@/types/goCompare";
 import TablePagination from "./TablePagination";
+import { FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
 
 // Three-dot loading component
 const ThreeDotLoader = () => (
@@ -241,15 +242,117 @@ function DraggableRow({
 
 export default function QuickSearchTable({ products, onRowClick }: ProductTableProps) {
   const [currentPage] = useState(1);
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'ascending' | 'descending' } | null>(null);
   const itemsPerPage = 10;
 
   // Check if products are QuickSearchResult type
   const isQuickSearchResult = products.length > 0 && ('store_name' in products[0] || 'product_name' in products[0]);
 
-  // Sort products (for ProductObj type only)
-  const sortedProducts = isQuickSearchResult
-    ? products
-    : [...(products as ProductObj[])].sort((a, b) => b.roi_percentage - a.roi_percentage)
+  const handleSort = (key: string) => {
+    let direction: 'ascending' | 'descending' = 'ascending';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+        direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (columnKey: string) => {
+    if (sortConfig?.key === columnKey) {
+        return sortConfig.direction === 'ascending' ? <FaSortUp className="inline ml-1" /> : <FaSortDown className="inline ml-1" />;
+    }
+    return <FaSort className="inline ml-1 text-gray-400" />;
+  };
+
+  // Sort products
+  const sortedProducts = useMemo(() => {
+    let sortableItems = [...products];
+
+    if (sortConfig !== null) {
+        sortableItems.sort((a: any, b: any) => {
+            let aValue: number = 0;
+            let bValue: number = 0;
+
+            if (isQuickSearchResult) {
+                const itemA = a as QuickSearchResult;
+                const itemB = b as QuickSearchResult;
+
+                switch (sortConfig.key) {
+                    case 'storePrice':
+                        aValue = parseFloat(itemA.price || itemA.buybox_price || '0');
+                        bValue = parseFloat(itemB.price || itemB.buybox_price || '0');
+                        break;
+                    case 'amazonPrice':
+                        aValue = parseFloat(itemA.amazon_price || '0');
+                        bValue = parseFloat(itemB.amazon_price || '0');
+                        break;
+                    case 'profitMargin':
+                        aValue = itemA.profit_margin;
+                        bValue = itemB.profit_margin;
+                        break;
+                    case 'grossROI':
+                        aValue = itemA.gross_roi;
+                        bValue = itemB.gross_roi;
+                        break;
+                    case 'salesRank':
+                        aValue = parseInt(itemA.sales_rank || '0');
+                        bValue = parseInt(itemB.sales_rank || '0');
+                        break;
+                    case 'sellers':
+                        aValue = parseInt(itemA.number_of_sellers || '0');
+                        bValue = parseInt(itemB.number_of_sellers || '0');
+                        break;
+                    default:
+                        return 0;
+                }
+            } else {
+                const itemA = a as ProductObj;
+                const itemB = b as ProductObj;
+
+                switch (sortConfig.key) {
+                    case 'storePrice':
+                        aValue = itemA.scraped_product.price.amount;
+                        bValue = itemB.scraped_product.price.amount;
+                        break;
+                    case 'amazonPrice':
+                        aValue = itemA.scraped_product.price.amount + itemA.price_difference;
+                        bValue = itemB.scraped_product.price.amount + itemB.price_difference;
+                        break;
+                    case 'profitMargin':
+                        aValue = itemA.profit_margin;
+                        bValue = itemB.profit_margin;
+                        break;
+                    case 'grossROI':
+                        aValue = itemA.roi_percentage;
+                        bValue = itemB.roi_percentage;
+                        break;
+                    case 'salesRank':
+                        aValue = itemA.sales_rank || 0;
+                        bValue = itemB.sales_rank || 0;
+                        break;
+                    case 'sellers':
+                        aValue = itemA.number_of_sellers || 0;
+                        bValue = itemB.number_of_sellers || 0;
+                        break;
+                    default:
+                        return 0;
+                }
+            }
+
+            if (aValue < bValue) {
+                return sortConfig.direction === 'ascending' ? -1 : 1;
+            }
+            if (aValue > bValue) {
+                return sortConfig.direction === 'ascending' ? 1 : -1;
+            }
+            return 0;
+        });
+    } else if (!isQuickSearchResult) {
+        // Default sort for ProductObj
+        sortableItems = (sortableItems as ProductObj[]).sort((a, b) => b.roi_percentage - a.roi_percentage);
+    }
+
+    return sortableItems;
+  }, [products, sortConfig, isQuickSearchResult]);
 
   // Only show first page (first 10 items)
   const currentData = sortedProducts.slice(0, itemsPerPage);
@@ -269,12 +372,42 @@ export default function QuickSearchTable({ products, onRowClick }: ProductTableP
               <tr className="bg-gray-50 border-b">
                 <th className="px-4 py-3 text-left font-medium text-gray-600">Product name</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-600">Store</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600">Store Price</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600">Amazon Price</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600">Profit Margin</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600">Gross ROI</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600">Sales Rank</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600">No. of Sellers</th>
+                <th 
+                  className="px-4 py-3 text-left font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('storePrice')}
+                >
+                  Store Price {getSortIcon('storePrice')}
+                </th>
+                <th 
+                  className="px-4 py-3 text-left font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('amazonPrice')}
+                >
+                  Amazon Price {getSortIcon('amazonPrice')}
+                </th>
+                <th 
+                  className="px-4 py-3 text-left font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('profitMargin')}
+                >
+                  Profit Margin {getSortIcon('profitMargin')}
+                </th>
+                <th 
+                  className="px-4 py-3 text-left font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('grossROI')}
+                >
+                  Gross ROI {getSortIcon('grossROI')}
+                </th>
+                <th 
+                  className="px-4 py-3 text-left font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('salesRank')}
+                >
+                  Sales Rank {getSortIcon('salesRank')}
+                </th>
+                <th 
+                  className="px-4 py-3 text-left font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('sellers')}
+                >
+                  No. of Sellers {getSortIcon('sellers')}
+                </th>
               </tr>
             </thead>
             <tbody>
