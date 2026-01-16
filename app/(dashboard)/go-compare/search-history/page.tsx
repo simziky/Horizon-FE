@@ -1,10 +1,11 @@
 "use client";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useSearchHistoryQuery } from "@/redux/api/quickSearchApi";
 import Loader from "@/utils/loader";
 import TablePagination from "../_components/TablePagination";
 import { ApiSearchResponseItem, SearchRecord } from "@/types/goCompare";
 import { useRouter } from "next/navigation";
+import { FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
 
 const tableColumns = [
     { label: 'ASIN, UPC or Query Name', key: 'asinOrUpc' },
@@ -19,20 +20,79 @@ const tableColumns = [
 const SearchHistory = () => {
     const [perPage, setPerPage] = useState(10);
     const [page, setPage] = useState(1);
+    const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'ascending' | 'descending' } | null>(null);
     const router = useRouter();
 
     const { data, isLoading, isFetching, isError } = useSearchHistoryQuery({ page, perPage });
-    const searchData: SearchRecord[] = data?.data?.map((item: ApiSearchResponseItem) => ({
+    const searchData: SearchRecord[] = useMemo(() => data?.data?.map((item: ApiSearchResponseItem) => ({
         id: item.id,
         asinOrUpc: item.asin_upc,
         searchType: item.search_type,
         searchDate: new Date(item.search_date).toLocaleDateString(),
+        // Keep original date for sorting if needed, but we can parse the string too
+        originalDate: new Date(item.search_date),
         amazonPrice: item.amazon_price ? `$${item.amazon_price}` : "-",
+        rawPrice: item.amazon_price || 0,
         country: item.country.country,
         stores: item.stores || [],
         results: item.results_count,
         countryId: item.country.id,
-    })) || []
+    })) || [], [data]);
+
+
+    const handleSort = (key: string) => {
+        let direction: 'ascending' | 'descending' = 'ascending';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+            direction = 'descending';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const sortedData = useMemo(() => {
+        const sortableItems = [...searchData];
+        if (sortConfig !== null) {
+            sortableItems.sort((a: SearchRecord, b: SearchRecord) => {
+                let aValue: number | Date | undefined;
+                let bValue: number | Date | undefined;
+
+                // Handle specific column sorting logic
+                if (sortConfig.key === 'amazonPrice') {
+                    aValue = a.rawPrice;
+                    bValue = b.rawPrice;
+                } else if (sortConfig.key === 'searchDate') {
+                    aValue = a.originalDate;
+                    bValue = b.originalDate;
+                } else if (sortConfig.key === 'results') {
+                    aValue = a.results;
+                    bValue = b.results;
+                } else {
+                    return 0;
+                }
+
+                if (aValue === undefined || bValue === undefined) return 0;
+
+
+                if (aValue < bValue) {
+                    return sortConfig.direction === 'ascending' ? -1 : 1;
+                }
+                if (aValue > bValue) {
+                    return sortConfig.direction === 'ascending' ? 1 : -1;
+                }
+                return 0;
+            });
+        }
+        return sortableItems;
+    }, [searchData, sortConfig]);
+
+    const getSortIcon = (columnKey: string) => {
+        if (!['results', 'amazonPrice', 'searchDate'].includes(columnKey)) return null;
+
+        if (sortConfig?.key === columnKey) {
+            return sortConfig.direction === 'ascending' ? <FaSortUp className="inline ml-1" /> : <FaSortDown className="inline ml-1" />;
+        }
+        return <FaSort className="inline ml-1 text-gray-400" />;
+    };
+
 
 
     const handlePageChange = (page: number) => {
@@ -108,12 +168,19 @@ const SearchHistory = () => {
                             <thead>
                                 <tr className="border-b bg-[#FCFCFC]">
                                     {tableColumns.map((column) => (
-                                        <th key={column.key} className={`px-4 py-3 text-left text-[#737379] font-normal ${column.key === 'storeLogo' && 'text-center'}`}>{column.label}</th>
+                                        <th 
+                                            key={column.key} 
+                                            className={`px-4 py-3 text-left text-[#737379] font-normal ${column.key === 'storeLogo' && 'text-center'} ${['results', 'amazonPrice', 'searchDate'].includes(column.key) ? 'cursor-pointer hover:bg-gray-100' : ''}`}
+                                            onClick={() => ['results', 'amazonPrice', 'searchDate'].includes(column.key) && handleSort(column.key)}
+                                        >
+                                            {column.label}
+                                            {getSortIcon(column.key)}
+                                        </th>
                                     ))}
                                 </tr>
                             </thead>
                             <tbody className="">
-                                {searchData?.map((record) => (
+                                {sortedData?.map((record) => (
                                     <tr key={record.id} className="font-medium cursor-pointer" onClick={() => handleRouting(record)}>
                                         <td className="px-4 pr-20 py-3 ">{record.asinOrUpc}</td>
                                         <td className="px-4 py-3">{record.searchType}</td>
