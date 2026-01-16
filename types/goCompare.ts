@@ -3,12 +3,14 @@ export interface SearchRecord {
     asinOrUpc: string
     searchType: string
     searchDate: string
+    originalDate?: Date
     amazonPrice: string
+    rawPrice?: number
     country: string
-    countryCode: string
+    countryCode?: string
     countryId?: number;
-    countryFlag: string
-    stores: Store[]
+    countryFlag?: string
+    stores: Store[] | string[]
     // storeLogo: string
     results: number
 }
