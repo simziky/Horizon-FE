@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { QuickSearchResponse } from '@/types/goCompare';
+//import { QuickSearchResponse } from '@/types/goCompare';
 
 // Mock data based on the sample response provided
-const mockQuickSearchData: QuickSearchResponse = {
+const mockQuickSearchData = {
     status: 200,
     message: "success",
     data: [

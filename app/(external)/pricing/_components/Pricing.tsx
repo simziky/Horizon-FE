@@ -4,7 +4,7 @@
 import { useLazyGetPricingQuery } from "@/redux/api/auth";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { IoIosCheckmark } from "react-icons/io";
+import { IoIosCheckmark, IoIosCheckmarkCircle } from "react-icons/io";
 import { FaCircle } from "react-icons/fa";
 
 interface Feature {
@@ -44,6 +44,29 @@ export default function Pricing() {
   const [showModal, setShowModal] = useState(false);
   const [pricings, { data: apiResponse, isLoading }] = useLazyGetPricingQuery();
 
+  const stats = [
+    {
+      value: "$92",
+      title: "Blended ARPU",
+      subtitle: "Weighted average revenue per user",
+    },
+    {
+      value: "85%",
+      title: "Gross Margins",
+      subtitle: "High-margin SaaS model",
+    },
+    {
+      value: "8%",
+      title: "Monthly Churn",
+      subtitle: "Industry-competitive retention",
+    },
+    {
+      value: "2.3x",
+      title: "LTV/CAC Ratio",
+      subtitle: "Healthy unit economics",
+    },
+  ];
+
   useEffect(() => {
     pricings({});
   }, [pricings]);
@@ -74,7 +97,7 @@ export default function Pricing() {
       (a, b) => parseFloat(a.price) - parseFloat(b.price)
     );
 
-    return sortedPlans.map((plan, _index) => {
+    return sortedPlans.map((plan, index) => {
       // Determine if this is the default highlighted plan (Premium)
       const isDefaultHighlighted = plan.name.toUpperCase() === "PREMIUM";
 
@@ -118,7 +141,8 @@ export default function Pricing() {
       const displayNotes = notes.length > 0 ? notes : [plan.interval === "year" ? "Annual billing" : "Monthly billing"];
 
       // Check if plan should be disabled (only STARTER (PRO) is available)
-      const isDisabled = plan.name.toUpperCase() == "SAGE";
+      //const isDisabled = plan.name.toUpperCase() !== 'STARTER (PRO)';
+      const isDisabled = plan.name.toUpperCase() == "";
 
       return {
         id: plan.id,
@@ -221,6 +245,10 @@ export default function Pricing() {
   return (
     <section className="bg-[#E7EBEE] py-12">
       <div className="max-w-6xl mx-auto lg:px-8">
+        <div className=" text-center mb-5">
+          <h1 className=" text-4xl font-bold">Our Pricing</h1>
+          <p>Choose the plan that fits your needs.</p>
+        </div>
         <div className="bg-white p-6 pb-20 rounded-3xl">
           {/* Toggle */}
           <div className="flex justify-center mb-20">

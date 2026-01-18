@@ -152,7 +152,7 @@ const GoCompareLoader: React.FC<GoCompareLoaderProps> = ({ asin, storeNames, isL
       const completedProgress = new Array(steps.length).fill(100);
       setAnimatedProgress(completedProgress);
     }
-  }, [isLoading, steps.length]);
+  }, [animatedProgress.length, isLoading, steps.length]);
 
   return (
     <div className="flex flex-col space-y-5 max-w-[80%] w-full min-w-3xl mx-auto p-6">
@@ -185,11 +185,11 @@ const GoCompareLoader: React.FC<GoCompareLoaderProps> = ({ asin, storeNames, isL
               <div
                 className={`w-3 h-3 rounded-full ${(step.isStoreStep && index === currentStoreIndex) ||
                     (!step.isStoreStep && isCompilingResults)
-                    ? "bg-green-500 animate-pulse"
+                    ? "bg-[#18cb96] animate-pulse"
                     : "bg-gray-300"
                   } ${(step.isStoreStep && index < currentStoreIndex) ||
                     (!step.isStoreStep && !isLoading)
-                    ? "bg-green-500"
+                    ? "bg-[#18cb96]"
                     : ""
                   }`}
               ></div>
@@ -198,13 +198,13 @@ const GoCompareLoader: React.FC<GoCompareLoaderProps> = ({ asin, storeNames, isL
             {/* Percentage pill */}
             <div className="absolute left-5 -top-2">
               <div
-                className={`px-3 text-xs py-0.5 rounded-full bg-green-50 transition-all duration-300 ${(step.isStoreStep && index <= currentStoreIndex) ||
+                className={`px-3 text-xs py-0.5 rounded-full bg-[#18cb96]/10 transition-all duration-300 ${(step.isStoreStep && index <= currentStoreIndex) ||
                     (!step.isStoreStep && isCompilingResults)
                     ? "opacity-100"
                     : "opacity-50"
                   }`}
               >
-                <span className="text-sm font-medium text-green-500">
+                <span className="text-sm font-medium text-[#18cb96]">
                   {step.percent}
                 </span>
               </div>
@@ -226,7 +226,7 @@ const GoCompareLoader: React.FC<GoCompareLoaderProps> = ({ asin, storeNames, isL
             {/* Custom progress bar with smooth animation */}
             <div className="h-3 w-full bg-gray-200 rounded-full overflow-hidden">
               <div
-                className="h-full bg-green-500 rounded-full transition-all duration-500 ease-out"
+                className="h-full bg-[#18cb96] rounded-full transition-all duration-500 ease-out"
                 style={{
                   width: `${animatedProgress[index] || 0}%`
                 }}

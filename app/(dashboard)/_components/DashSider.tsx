@@ -33,9 +33,22 @@ const menuData = [
  
   {
     id: "3",
+    path: "/go-compare",
+    label: "Go Compare",
+    icon: HiOutlineComputerDesktop,
+  },
+  {
+    id: "4",
     path: "/keepa",
     label: "Keepa",
     icon: HiOutlineChartBar,
+    comingSoon: false,
+  },
+  {
+    id: "5",
+    path: "/totan",
+    label: "Totan (AI)",
+    icon: TotanAIIcon,
     comingSoon: false,
   },
  

@@ -64,36 +64,36 @@ export default function QuickSearch() {
 
     // Capture searchId from initial quick search response
     useEffect(() => {
-        console.log('🔍 useEffect triggered - quickSearchResult.data:', !!quickSearchResult.data, 'searchId:', searchId, 'currentSearchId:', currentSearchId);
-        console.log('🔍 quickSearchResult.isLoading:', quickSearchResult.isLoading);
-        console.log('🔍 quickSearchResult.isError:', quickSearchResult.isError);
-        console.log('🔍 quickSearchResult.error:', quickSearchResult.error);
+        console.log('useEffect triggered - quickSearchResult.data:', !!quickSearchResult.data, 'searchId:', searchId, 'currentSearchId:', currentSearchId);
+        console.log('quickSearchResult.isLoading:', quickSearchResult.isLoading);
+        console.log('quickSearchResult.isError:', quickSearchResult.isError);
+        console.log('quickSearchResult.error:', quickSearchResult.error);
         
         if (quickSearchResult.data && !searchId && !currentSearchId) {
-            console.log('🔍 Full quickSearchResult.data structure:', quickSearchResult.data);
-            console.log('🔍 quickSearchResult.data type:', typeof quickSearchResult.data);
-            console.log('🔍 quickSearchResult.data keys:', Object.keys(quickSearchResult.data));
+            console.log('Full quickSearchResult.data structure:', quickSearchResult.data);
+            console.log('quickSearchResult.data type:', typeof quickSearchResult.data);
+            console.log('quickSearchResult.data keys:', Object.keys(quickSearchResult.data));
             
             // Try different possible paths for the ID
             const responseSearchId1 = quickSearchResult.data?.data?.id;
             const responseSearchId2 = quickSearchResult.data?.id;
             const responseSearchId3 = (quickSearchResult.data as any)?.id;
             
-            console.log('🔍 Trying data.data.id:', responseSearchId1);
-            console.log('🔍 Trying data.id:', responseSearchId2);
-            console.log('🔍 Trying direct id:', responseSearchId3);
+            console.log('Trying data.data.id:', responseSearchId1);
+            console.log('Trying data.id:', responseSearchId2);
+            console.log('Trying direct id:', responseSearchId3);
             
             const responseSearchId = responseSearchId1 || responseSearchId2 || responseSearchId3;
             
             if (responseSearchId) {
-                console.log('📝 Captured searchId from initial response:', responseSearchId);
+                console.log('Captured searchId from initial response:', responseSearchId);
                 setCurrentSearchId(responseSearchId);
             } else {
-                console.log('❌ No searchId found in initial response');
-                console.log('❌ Available data structure:', JSON.stringify(quickSearchResult.data, null, 2));
+                console.log('No searchId found in initial response');
+                console.log('Available data structure:', JSON.stringify(quickSearchResult.data, null, 2));
             }
         }
-    }, [quickSearchResult.data, searchId, currentSearchId]);
+    }, [quickSearchResult.data, searchId, currentSearchId, quickSearchResult.isLoading, quickSearchResult.isError, quickSearchResult.error]);
 
     // Log the raw API response for debugging (only in development)
     useEffect(() => {
@@ -110,7 +110,7 @@ export default function QuickSearch() {
     const result: QueryResult = (() => {
         // Prioritize refresh search result if available and has data
         if (refreshSearchResult.data) {
-            console.log('🔍 Refresh search result:', refreshSearchResult);
+            console.log('Refresh search result:', refreshSearchResult);
             return {
                 data: refreshSearchResult.data?.data || refreshSearchResult.data,
                 isLoading: refreshSearchResult.isLoading,
@@ -274,10 +274,10 @@ export default function QuickSearch() {
                 
                 if (activeSearchId) {
                     // Use the new refresh endpoint for better performance
-                    console.log('🔄 Using new refresh endpoint with searchId:', activeSearchId);
+                    console.log('Using refresh endpoint with searchId:', activeSearchId);
                     triggerRefreshSearch({ searchId: activeSearchId, perPage: 10 });
                 } else {
-                    console.log('⚠️ No searchId available, skipping auto-refresh');
+                    console.log('No searchId available, skipping auto-refresh');
                 }
             }, 10000); // 10 seconds
         }
@@ -362,18 +362,25 @@ export default function QuickSearch() {
                 // Handle direct product data from the drag event
                     if (active.data.current?.product) {
                         const draggedProduct = active.data.current.product;
-                        // Set product for comparison
-                        setSelectedProducts([draggedProduct])
    
-                        // Update selected ASIN for product details
+                        // Update selected ASIN and price for product details
+                        // Match the exact logic from handleRowClick
                         if ('asin' in draggedProduct) {
                             console.log("Drag setting ASIN:", draggedProduct.asin, "Price:", draggedProduct.price);
-                            setSelectedAsin(draggedProduct.asin);
                             setSelectedSalesPrice(draggedProduct.price);
+                            setSelectedAsin(draggedProduct.asin);
+                            setSelectedProducts([draggedProduct]);
                         } else if ('scraped_product' in draggedProduct) {
                             console.log("Drag setting ASIN:", draggedProduct.scraped_product.id, "Price:", draggedProduct.scraped_product.price.formatted);
-                            setSelectedAsin(draggedProduct.scraped_product.id);
                             setSelectedSalesPrice(draggedProduct.scraped_product.price.formatted);
+                            setSelectedAsin(draggedProduct.scraped_product.id);
+                            setSelectedProducts([draggedProduct]);
+                        } else if ('store_name' in draggedProduct) {
+                            // Fallback for QuickSearchResult without asin property
+                            console.log("Drag QuickSearchResult fallback - using original ASIN:", asin, "Price:", draggedProduct.price);
+                            setSelectedSalesPrice(draggedProduct.price);
+                            setSelectedAsin(asin);
+                            setSelectedProducts([draggedProduct]);
                         }
    
                         // Scroll to Comparison Workspace section
@@ -398,10 +405,11 @@ export default function QuickSearch() {
                                  `${product.store_name}-${product.asin}` === active.id
                 )
                 if (draggedProduct) {
-                    console.log("Results array drag setting ASIN:", draggedProduct.asin, "Price:", draggedProduct.price);
-                    setSelectedProducts([draggedProduct as any])
-                    setSelectedAsin(draggedProduct.asin);
+                    // Use product's asin (same as handleRowClick)
+                    console.log("Results array drag - setting ASIN:", draggedProduct.asin, "Price:", draggedProduct.price);
                     setSelectedSalesPrice(draggedProduct.price);
+                    setSelectedAsin(draggedProduct.asin);
+                    setSelectedProducts([draggedProduct as any]);
                 }
             }
             // Handle new API response format with results array
@@ -414,10 +422,11 @@ export default function QuickSearch() {
                                      `${product.store_name}-${product.asin}` === active.id
                 )
                 if (draggedProduct) {
-                    console.log("Fallback drag setting ASIN:", draggedProduct.asin, "Price:", draggedProduct.price);
-                    setSelectedProducts([draggedProduct as any])
-                    setSelectedAsin(draggedProduct.asin);
+                    // Use product's asin (same as handleRowClick)
+                    console.log("Fallback drag - setting ASIN:", draggedProduct.asin, "Price:", draggedProduct.price);
                     setSelectedSalesPrice(draggedProduct.price);
+                    setSelectedAsin(draggedProduct.asin);
+                    setSelectedProducts([draggedProduct as any]);
                 }
             }
             // Handle old QuickSearchData structure
@@ -426,12 +435,13 @@ export default function QuickSearch() {
                     (product) => product.scraped_product.id === active.id
                 )
                 if (draggedProduct) {
-                    setSelectedProducts([draggedProduct])
+                    setSelectedSalesPrice(draggedProduct.scraped_product.price.formatted);
                     setSelectedAsin(draggedProduct.scraped_product.id);
+                    setSelectedProducts([draggedProduct]);
                 }
             }
         }
-    }, [data])
+    }, [data, asin])
 
     const handleRowClick = (product: ProductObj | QuickSearchResult) => {
         console.log("Row clicked - Product:", product);
@@ -708,6 +718,7 @@ export default function QuickSearch() {
                         productData={productData}
                         isSelected={selectedProducts.length > 0}
                         isLoading={amazonProductDetailsResult.isLoading || comparisonProductDetailsResult.isLoading}
+                        isGrossRoiFetching={comparisonProductDetailsResult.isFetching}
                     />
                 </div>
 

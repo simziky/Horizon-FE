@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   /* config options here */
   productionBrowserSourceMaps: true,
   images: {
+    unoptimized: true,
     remotePatterns: [{
       protocol: "https",
       hostname: "avatar.iran.liara.run",
@@ -18,6 +19,26 @@ const nextConfig: NextConfig = {
     }, {
       protocol: "https",
       hostname: "m.media-amazon.com",
+      port: "",
+      pathname: "/**"
+    }, {
+      protocol: "https",
+      hostname: "encrypted-tbn2.gstatic.com",
+      port: "",
+      pathname: "/**"
+    }, {
+      protocol: "https",
+      hostname: "encrypted-tbn0.gstatic.com",
+      port: "",
+      pathname: "/**"
+    }, {
+      protocol: "https",
+      hostname: "encrypted-tbn1.gstatic.com",
+      port: "",
+      pathname: "/**"
+    }, {
+      protocol: "https",
+      hostname: "encrypted-tbn3.gstatic.com",
       port: "",
       pathname: "/**"
     }]
