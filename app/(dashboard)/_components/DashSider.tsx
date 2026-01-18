@@ -5,13 +5,14 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import Logo from "@/public/assets/svg/Optisage Logo.svg";
-
+import { UPCScannerIcon, TotanAIIcon } from "@/public/assets/svg/icons";
 import { useAppSelector } from "@/redux/hooks";
 // import { BsStars } from "react-icons/bs";
 import {
   HiArrowPathRoundedSquare,
   HiOutlineChartBar,
   HiOutlineCog6Tooth,
+  HiOutlineComputerDesktop,
   HiOutlineCreditCard,
   HiOutlineDocumentText,
   HiOutlineHome,
@@ -30,7 +31,6 @@ const menuData = [
     label: "History",
     icon: HiArrowPathRoundedSquare,
   },
- 
   {
     id: "3",
     path: "/go-compare",
@@ -50,14 +50,15 @@ const menuData = [
     label: "Totan (AI)",
     icon: TotanAIIcon,
     comingSoon: false,
+    beta: true,
   },
- 
+  { id: "6", path: "/upc-scanner", label: "UPC Scanner", icon: UPCScannerIcon },
 ];
 
 const secondaryMenu = [
-  { id: "4", path: "/settings", label: "Settings", icon: HiOutlineCog6Tooth },
+  { id: "7", path: "/settings", label: "Settings", icon: HiOutlineCog6Tooth },
   {
-    id: "5",
+    id: "8",
     path: "",
     label: "Credit",
     icon: HiOutlineDocumentText,
@@ -67,7 +68,7 @@ const secondaryMenu = [
 
 const billingMenu = [
   {
-    id: "6",
+    id: "9",
     path: "/subscriptions",
     label: "Subscriptions",
     icon: HiOutlineCreditCard,
@@ -120,7 +121,11 @@ const DashSider = () => {
                 </span>
               )}
 
-             
+              {item.beta && !item.comingSoon && (
+                <span className="ml-auto bg-primary text-white text-xs px-1.5 py-0.5 rounded-md">
+                  Beta
+                </span>
+              )}
             </>
           )}
 
@@ -210,7 +215,21 @@ const DashSider = () => {
         </div>
 
 
-         
+          {/* Support */}
+          <div className="p-4 border-t border-gray-200 mt-6">
+            <p className="text-sm font-medium">
+              Need Help? Contact Support
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              Get assistance with your account, technical issues, or any questions about optisage.
+            </p>
+            <button
+              onClick={() => window.open("https://crm.optisage.ai/forms/ticket?styled=1", "_blank")}
+              className="bg-primary hover:bg-primary-hover duration-200 text-white text-sm font-medium px-4 py-2 rounded-md w-full mt-3 active:scale-95"
+            >
+              Contact Support
+            </button>
+          </div>
 
         {/* Bottom Section */}
         {!collapsed && (
