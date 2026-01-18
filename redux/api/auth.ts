@@ -74,6 +74,15 @@ export const authApi = createApi({
       }),
       //invalidatesTags: ["Profile"],
     }),
+
+    checkEmail: builder.mutation({
+      query: (data) => ({
+        url: "auth/signup/check-email",
+        method: "POST",
+        body: data,
+      }),
+      //invalidatesTags: ["Profile"],
+    }),
     createPassword: builder.mutation({
       query: (data) => ({
         url: "create_password",
@@ -210,6 +219,7 @@ export const authApi = createApi({
 
 export const {
   useLoginMutation,
+  useCheckEmailMutation,
   useSignupMutation,
   useLazyGetProfileQuery,
   useLogoutQuery,

@@ -1,12 +1,14 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+
 const initialState: Record<string, any> = {
   timeout: false,
   idleTimeOut: 1800000, // 30mins
   notAuthorized: false,
   serverError: false,
   isAuthenticated: false,
-  user:{},
-  avi: ''
+  user: {},
+  avi: '',
+  showPackageRestrictionModal: false, // Add this new state
 };
 
 export const authSlice = createSlice({
@@ -45,6 +47,10 @@ export const authSlice = createSlice({
       state.user = [];
       state.isAuthenticated = false;
     },
+    // Add this new reducer
+    setShowPackageRestrictionModal: (state, action: PayloadAction<boolean>) => {
+      state.showPackageRestrictionModal = action.payload;
+    },
   },
 });
 
@@ -58,6 +64,8 @@ export const {
   setServerError,
   setNotAuthorized,
   resetServerError,
-  logout
+  logout,
+  setShowPackageRestrictionModal, // Export the new action
 } = authSlice.actions;
+
 export default authSlice.reducer;

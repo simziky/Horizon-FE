@@ -1,11 +1,15 @@
 "use client";
-import { useLazyGetProfileQuery, useUpdateConnectAmazonMutation } from "@/redux/api/auth";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import {
+  useLazyGetProfileQuery,
+  useUpdateConnectAmazonMutation,
+} from "@/redux/api/auth";
 import { DashNav, DashSider } from "./_components";
 import { useEffect, useState } from "react";
 import { message, Modal } from "antd";
-//import { useDispatch } from "react-redux";
-//import { setUser } from "@/redux/slice/authSlice";
-import opxamazon from "@/public/assets/images/opXama.png"
+import { useDispatch, useSelector } from "react-redux";
+import { setShowPackageRestrictionModal } from "@/redux/slice/authSlice";
+import opxamazon from "@/public/assets/images/opXama.png";
 import { GoAlert } from "react-icons/go";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
@@ -13,6 +17,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { HiMiniXMark } from "react-icons/hi2";
 import { amazonAuthUrl } from "../(auth)/signUp/_components/Signup";
+import package_restriction from "../../public/assets/svg/packageRestrivtion.svg";
 
 export default function DashboardLayout({
   children,
@@ -20,10 +25,17 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }>) {
   const [getProfile, {}] = useLazyGetProfileQuery();
-  const [amazonConnect, { isLoading: isAmazonConnectLoading }] = useUpdateConnectAmazonMutation();
+  const [amazonConnect, { isLoading: isAmazonConnectLoading }] =
+    useUpdateConnectAmazonMutation();
   const [messageApi, contextHolder] = message.useMessage();
-  //const dispatch = useDispatch();
+  const dispatch = useDispatch();
   const router = useRouter();
+  
+  // Get modal state from Redux
+  const showPackageRestrictionModal = useSelector(
+    (state: any) => state.api.showPackageRestrictionModal
+  );
+  
   // State to manage modal visibility
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [open, setOpen] = useState(false);
@@ -46,6 +58,15 @@ export default function DashboardLayout({
       });
   };
 
+  const handleClosePackageRestrictionModal = () => {
+    dispatch(setShowPackageRestrictionModal(false));
+  };
+
+  const handleUpgradeSubscription = () => {
+    dispatch(setShowPackageRestrictionModal(false));
+    router.push("/subscriptions");
+  };
+
   useEffect(() => {
     getProfile({})
       .unwrap()
@@ -56,7 +77,7 @@ export default function DashboardLayout({
         ) {
           setIsModalVisible(true);
         }
-        
+
         // Check if notify_to_connect_amazon is true
         if (res?.data?.notify_to_connect_amazon === true) {
           setOpen(true);
@@ -82,6 +103,7 @@ export default function DashboardLayout({
         <div className="p-2 pb-4">
           {children}
 
+          {/**...........EXPIRED SUBSCRIPTION MODAL................*/}
           <Modal
             title="Subscription Alert"
             open={isModalVisible}
@@ -120,6 +142,7 @@ export default function DashboardLayout({
             </div>
           </Modal>
 
+          {/**...........AMAZON CONNECTION MODAL................*/}
           <Modal
             open={open}
             footer={null}
@@ -127,38 +150,50 @@ export default function DashboardLayout({
             centered
             width={420}
             className="!p-0"
-            styles={{body:{padding: 0}, content:{borderRadius:30}}}
+            styles={{ body: { padding: 0 }, content: { borderRadius: 30 } }}
           >
             <div className="bg-white rounded-3xl pt-10 overflow-hidden ">
               {/* Header with BG Color instead of image */}
               <div className=" flex flex-col items-center py-6">
-                <Image src={opxamazon} alt='image' className=" h-[91px]" />
+                <Image src={opxamazon} alt="image" className=" h-[91px]" />
               </div>
 
               {/* Body */}
               <div className="p-6 text-center">
                 <h2 className="text-lg font-semibold mb-3">
-                  Your account is not yet connected to your Amazon seller account.
+                  Your account is not yet connected to your Amazon seller
+                  account.
                 </h2>
 
                 <p className="text-gray-600 mb-6 text-sm">
-                  Please 
+                  Please
                   <Link href={amazonAuthUrl} target="_blank">
-                    <span className="text-primary underline cursor-pointer">{" "}log in{" "}</span>
+                    <span className="text-primary underline cursor-pointer">
+                      {" "}
+                      log in{" "}
+                    </span>
                   </Link>
                   to connect or{" "}
-                  <Link href={'https://sellercentral.amazon.com/'} target="_blank">
-                    <span className="text-primary underline cursor-pointer">create an account{" "}</span> 
+                  <Link
+                    href={"https://sellercentral.amazon.com/"}
+                    target="_blank"
+                  >
+                    <span className="text-primary underline cursor-pointer">
+                      create an account{" "}
+                    </span>
                   </Link>
-                  if you do not have one, to ensure uninterrupted access to optisage.
+                  if you do not have one, to ensure uninterrupted access to
+                  optisage.
                 </p>
 
-                <button 
+                <button
                   onClick={handleDontShowAgain}
                   disabled={isAmazonConnectLoading}
                   className=" py-3 px-8 rounded-xl text-[#009F6D] border border-primary  hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isAmazonConnectLoading ? "Saving..." : "Don't show this again"}
+                  {isAmazonConnectLoading
+                    ? "Saving..."
+                    : "Don't show this again"}
                 </button>
               </div>
 
@@ -169,6 +204,55 @@ export default function DashboardLayout({
               >
                 <HiMiniXMark size={26} />
               </button>
+            </div>
+          </Modal>
+
+          {/**...........PACKAGE RESTRICTION MODAL................*/}
+          <Modal
+            open={showPackageRestrictionModal}
+            footer={null}
+            closable={false}
+            centered
+            width={400}
+            className="!p-0"
+            styles={{ body: { padding: 0 }, content: { borderRadius: 30 } }}
+          >
+            <div className="bg-white rounded-3xl pt-10 pb-5 overflow-hidden ">
+              {/* Header with BG Color instead of image */}
+              <div className=" flex flex-col items-center py-6">
+                <Image
+                  src={package_restriction}
+                  alt="image"
+                  className=" h-[91px]"
+                />
+              </div>
+
+              {/* Body */}
+              <div className="p-0 text-center">
+                <h2 className="text-base font-normal mb-3 text-[#596375]">
+                  Your current subscription package doesnt allow this feature.
+                  To access, click the upgrade button to upgrade your
+                  subscription package.
+                </h2>
+
+                <div className=" flex gap-3 px-5 justify-center mt-10">
+                  <button
+                    onClick={handleClosePackageRestrictionModal}
+                    className=" w-[114px] bg-[#F2F2F2] text-[#676A75] rounded-lg py-2 hover:bg-[#F2F2F2]/40"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    onClick={handleUpgradeSubscription}
+                    className=" 
+                bg-[linear-gradient(170.84deg,#009F6D_26.22%,#128561_82.74%),linear-gradient(5.9deg,rgba(0,0,0,0)_48.66%,rgba(255,255,255,0.2)_95.01%)] hover:bg-[#128561] px-6
+                bg-blend-normal text-white rounded-lg"
+                  >
+                    Upgrade subscription
+                  </button>
+                </div>
+              </div>
             </div>
           </Modal>
         </div>

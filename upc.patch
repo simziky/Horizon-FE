@@ -1,0 +1,36 @@
+diff --git a/app/(dashboard)/upc-scanner/_components/UpcScanner.tsx b/app/(dashboard)/upc-scanner/_components/UpcScanner.tsx
+index 21e6731..9d439ee 100644
+--- a/app/(dashboard)/upc-scanner/_components/UpcScanner.tsx
++++ b/app/(dashboard)/upc-scanner/_components/UpcScanner.tsx
+@@ -749,7 +749,10 @@ const UpcScanner = () => {
+           <div className="flex gap-2 flex-wrap sm:flex-nowrap text-sm">
+             <button
+               type="button"
+-              onClick={() => setActiveTab("upc")}
++              onClick={() => {
++                setActiveTab("upc");
++                setSelectedProductId(null);
++              }}
+               className={`flex items-center gap-1.5 rounded-full font-semibold py-2 px-4 transition-colors ${
+                 selectedProductId
+                   ? "bg-[#F3F4F6] text-[#858587] hover:bg-[#F3F4F6]/90"
+diff --git a/app/(dashboard)/upc-scanner/page.tsx b/app/(dashboard)/upc-scanner/page.tsx
+new file mode 100644
+index 0000000..34366d2
+--- /dev/null
++++ b/app/(dashboard)/upc-scanner/page.tsx
+@@ -0,0 +1,14 @@
++import { Metadata } from "next";
++import UpcScanner from "./_components/UpcScanner";
++
++export const metadata: Metadata = {
++  title: "UPC Scanner",
++  description: "UPC Scanner",
++};
++
++const page = () => {
++  return <UpcScanner />;
++};
++
++export default page;
++

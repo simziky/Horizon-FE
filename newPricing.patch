@@ -1,0 +1,481 @@
+diff --git a/app/(external)/pricing/_components/Pricing.tsx b/app/(external)/pricing/_components/Pricing.tsx
+index 11fabc2..2e50043 100644
+--- a/app/(external)/pricing/_components/Pricing.tsx
++++ b/app/(external)/pricing/_components/Pricing.tsx
+@@ -1,14 +1,11 @@
+ "use client";
+ /* eslint-disable @typescript-eslint/no-explicit-any */
+ /* eslint-disable @typescript-eslint/no-unused-vars */
+-import { useLazyGetPricingQuery, useSignupMutation } from "@/redux/api/auth";
+-import { useLazyCreateStripeSubscriptionV2Query } from "@/redux/api/subscriptionApi";
+-import { useRouter, useSearchParams } from "next/navigation";
++import { useLazyGetPricingQuery } from "@/redux/api/auth";
+ import { useEffect, useState } from "react";
++import { useSearchParams } from "next/navigation";
+ import { IoIosCheckmark, IoIosCheckmarkCircle } from "react-icons/io";
+-import { message } from "antd";
+-import { MdCancel } from "react-icons/md";
+-import { FaCircle } from "react-icons/fa6";
++import { FaCircle } from "react-icons/fa";
+ 
+ interface Feature {
+   name: string;
+@@ -35,30 +32,17 @@ interface PricingPlan {
+   stripe_product_id: string;
+ }
+ 
+-export default function Packages() {
+-  const router = useRouter();
++export default function Pricing() {
+   const searchParams = useSearchParams();
+-  const [messageApi, contextHolder] = message.useMessage();
+-
+   const [isAnnual, setIsAnnual] = useState(false);
+   const [pricingData, setPricingData] = useState<PricingPlan[]>([]);
+   const [expandedFeatures, setExpandedFeatures] = useState<{
+     [key: number]: boolean;
+   }>({});
+   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
++  const [refCode, setRefCode] = useState<string | null>(null);
+   const [showModal, setShowModal] = useState(false);
+-  const [showEmailExistsModal, setShowEmailExistsModal] = useState(false);
+-
+-  // User data from signup flow
+-  const [userEmail, setUserEmail] = useState<string>("");
+-  const [userFullname, setUserFullname] = useState<string>("");
+-  const [userRefCode, setUserRefCode] = useState<string>("");
+-  const [isFromSignup, setIsFromSignup] = useState(false);
+-
+-  // API hooks
+   const [pricings, { data: apiResponse, isLoading }] = useLazyGetPricingQuery();
+-  const [subscribe, { isLoading: isCheckoutLoading }] = useSignupMutation();
+-  //const [subscribe, { isLoading: isCheckoutLoading }] = useLazyCreateStripeSubscriptionV2Query();
+ 
+   const stats = [
+     {
+@@ -83,20 +67,6 @@ export default function Packages() {
+     },
+   ];
+ 
+-  // Handle URL params from signup redirect
+-  useEffect(() => {
+-    const email = searchParams.get("email");
+-    const name = searchParams.get("fullname");
+-    const ref = searchParams.get("ref");
+-
+-    if (email && name) {
+-      setUserEmail(email);
+-      setUserFullname(name);
+-      setIsFromSignup(true);
+-      if (ref) setUserRefCode(ref);
+-    }
+-  }, [searchParams]);
+-
+   useEffect(() => {
+     pricings({});
+   }, [pricings]);
+@@ -107,80 +77,13 @@ export default function Packages() {
+     }
+   }, [apiResponse]);
+ 
+-  // Error handling function
+-  const error = (err: string) => {
+-    messageApi.open({
+-      type: "error",
+-      content: err,
+-      icon: <MdCancel color="red" size={20} className="mr-2" />,
+-      style: {
+-        marginTop: "5vh",
+-        fontSize: 16,
+-      },
+-    });
+-  };
+-
+-  // Navigation functions for email exists modal
+-  const handleGoToLogin = () => {
+-    setShowEmailExistsModal(false);
+-    // Navigate to login page - adjust the route as needed
+-    router.push('/');
+-  };
+-
+-  const handleResetPassword = () => {
+-    setShowEmailExistsModal(false);
+-    // Navigate to reset password page - adjust the route as needed
+-    router.push('/forgot-password');
+-  };
+-
+-  // Direct checkout function for signup flow
+-  const proceedToCheckout = async (plan: any) => {
+-    if (!userEmail || !userFullname) {
+-      error("Missing user information. Please try again.");
+-      return;
+-    }
+-
+-    const payload: {
+-      pricing_id: string;
+-      email: string;
+-      name: string;
+-      referral_code?: string;
+-    } = {
+-      pricing_id: plan.stripePriceId,
+-      email: userEmail,
+-      name: userFullname,
+-    };
+-
+-    if (userRefCode) {
+-      payload.referral_code = userRefCode;
+-    }
+-
+-    try {
+-      const response = await subscribe(payload).unwrap();
+-
+-      if (response?.data?.url) {
+-        // Redirect to Stripe checkout
+-        if (window.top) {
+-          window.top.location.href = response.data.url;
+-        } else {
+-          window.open(response.data.url, "_blank");
+-        }
+-      } else {
+-        console.error("No checkout URL returned");
+-        error("Failed to create checkout session. Please try again.");
+-      }
+-    } catch (err: any) {
+-      console.error("Checkout error:", err);
+-      
+-      // Check if it's the email already exists error
+-      if (err?.data?.responseCode === "91" || 
+-          (err?.data?.status === 422 && err?.data?.message?.includes("already registered"))) {
+-        setShowEmailExistsModal(true);
+-      } else {
+-        error(err?.data?.message || "An error occurred during checkout");
+-      }
++  // Extract URL parameters
++  useEffect(() => {
++    const ref = searchParams.get("ref");
++    if (ref) {
++      setRefCode(ref);
+     }
+-  };
++  }, [searchParams]);
+ 
+   // Process pricing data to get plans for current billing interval
+   const getProcessedPlans = () => {
+@@ -259,9 +162,11 @@ export default function Packages() {
+           notes.find((note) => note.includes("Support")) ||
+           "Annual subscription";
+       }
+-      
+-      const isDisabled = plan.name.toUpperCase() === "SAGE";
+-      
++
++      // Check if plan should be disabled (only STARTER (PRO) is available)
++      //const isDisabled = plan.name.toUpperCase() !== 'STARTER (PRO)';
++      const isDisabled = plan.name.toUpperCase() == "";
++
+       return {
+         id: plan.id,
+         name: plan.name, // Keep original name without modification
+@@ -271,12 +176,16 @@ export default function Packages() {
+         description,
+         features,
+         note: upgradeNote,
+-        buttonText: billingNote,
++        buttonText: isDisabled
++          ? "Unavailable"
++          : plan.trial > 0
++          ? "Start Free Trial"
++          : billingNote,
+         isDefaultHighlighted,
+-        stripePriceId: plan.id,
++        stripePriceId: plan.stripe_price_id,
+         interval: plan.interval,
+         trial: plan.trial,
+-        isDisabled
++        isDisabled,
+       };
+     });
+   };
+@@ -324,17 +233,23 @@ export default function Packages() {
+   };
+ 
+   const handlePlanSelection = (plan: any) => {
+-    if (isFromSignup) {
+-      // Coming from signup - go directly to checkout
+-      proceedToCheckout(plan);
++    // Handle the plan selection logic here with window redirect for iframe usage
++    console.log("Selected plan:", plan);
++
++    // Construct URL with parameters
++    const url = `/signUp?ref=${refCode || ""}&pricing=${plan.id}`;
++
++    // Use window.open for iframe compatibility
++    if (window.top && window.top !== window) {
++      // If in iframe, open in parent window
++      window.top.open(url, "_blank");
+     } else {
+-      // Normal pricing page behavior
+-      console.log("Selected plan:", plan);
+-      // Add your normal plan selection logic here if needed
++      // If not in iframe, open normally
++      window.open(url, "_blank");
+     }
+   };
+ 
+-  const confirmCheckout = () => {
++  const confirmSubscription = () => {
+     const selectedPlan = processedPlans.find((p) => p.id === selectedPlanId);
+     if (selectedPlan) {
+       handlePlanSelection(selectedPlan);
+@@ -342,51 +257,22 @@ export default function Packages() {
+     }
+   };
+ 
+-  // Update button text and loading state
+-  const getButtonText = (plan: any, isSelected: boolean) => {
+-    if (isFromSignup) {
+-      // Coming from signup flow
+-      if (isCheckoutLoading && isSelected) {
+-        return "Processing...";
+-      }
+-      return isSelected ? (plan.trial > 0 ? "Start Free Trial" : "Proceed to Checkout") : "Select plan";
+-    } else {
+-      // Normal pricing page
+-      return isSelected ? (plan.trial > 0 ? "Start Free Trial" : plan.buttonText) : "Select plan";
+-    }
+-  };
+-
+-  const isButtonLoading = (plan: any, isSelected: boolean) => {
+-    return isFromSignup && isSelected && isCheckoutLoading;
+-  };
+-
+   if (isLoading) {
+     return (
+-      <div className="flex justify-center h-screen items-center">
+-        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-primary"></div>
+-      </div>
++    <div className="flex justify-center h-screen items-center">
++          <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-primary"></div>
++        </div>
+     );
+   }
+ 
+   return (
+-    <section className="bg-[#E7EBEE] py-12 min-h-svh">
+-      {contextHolder}
++    <section className="bg-[#E7EBEE] py-12">
+       <div className="max-w-6xl mx-auto lg:px-8">
++        <div className=" text-center mb-5">
++          <h1 className=" text-4xl font-bold">Our Pricing</h1>
++          <p>Choose the plan that fits your needs.</p>
++        </div>
+         <div className="bg-white p-6 pb-20 rounded-3xl">
+-          {/* Context message if coming from signup - FIXED COMMENT BLOCK */}
+-          {/*
+-          {isFromSignup && (
+-            <div className="text-center mb-6">
+-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+-                Choose Your Plan
+-              </h2>
+-              <p className="text-gray-600">
+-                Select the package that best fits your needs, {userFullname}
+-              </p>
+-            </div>
+-          )}
+-          */}
+-
+           {/* Toggle */}
+           <div className="flex justify-center mb-20">
+             <div className="flex items-center space-x-4 bg-[#F3F8FB] rounded-full px-2 py-2">
+@@ -410,7 +296,7 @@ export default function Packages() {
+           </div>
+ 
+           {/* Pricing Cards */}
+-          <div className="grid gap-6 md:grid-cols-3">
++          <div className="grid gap-6 md:grid-cols-3 ">
+             {processedPlans.map((plan) => {
+               const isSelected = selectedPlanId === plan.id;
+               const isHighlighted = isSelected;
+@@ -431,11 +317,13 @@ export default function Packages() {
+                       Coming Soon
+                     </div>
+                   )}
+-                  {isHighlighted && (
++
++                    {isHighlighted && (
+                     <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 border border-[#08B27D] bg-white text-[#596375] text-xs px-3 py-1 rounded-full">
+                       {plan.name.toUpperCase() === "PREMIUM" && isSelected ? "Most Popular" : "Selected"}
+                     </div>
+                   )}
++
+                   <div className="flex flex-col items-center space-y-4">
+                     <h3
+                       className={`text-2xl font-semibold text-center ${
+@@ -456,9 +344,9 @@ export default function Packages() {
+                       </span>
+                     </p>
+                     <div
+-                      className={`px-3 py-[2px] rounded-2xl text-white w-fit ${
+-                        isHighlighted ? "bg-[#232323]" : "bg-[#09AD7A]"
+-                      }`}
++                      className={`px-3 py-[2px] rounded-2xl text-white w-fit
++                  ${isHighlighted ? "bg-[#232323]" : "bg-[#09AD7A]"}
++                      `}
+                     >
+                       <span className="text-sm">{plan.priceLabel}</span>
+                     </div>
+@@ -479,7 +367,7 @@ export default function Packages() {
+                           <div className="relative w-6 h-6 flex-shrink-0">
+                             {/* Circle background */}
+                             <FaCircle
+-                              className={`absolute inset-0 ${
++                              className={`absolute  inset-0 ${
+                                 isHighlighted
+                                   ? "text-[#dbdbdb54]"
+                                   : "text-[#009F6D]/40"
+@@ -487,20 +375,14 @@ export default function Packages() {
+                             />
+                             {/* White check */}
+                             <IoIosCheckmark
+-                              className={`absolute inset-0 ${
++                              className={`absolute inset-0  ${
+                                 isHighlighted
+                                   ? "text-[#DBDBDB]"
+                                   : "text-[#009F6D]"
+                               }`}
+                             />
+                           </div>
+-                          <span
+-                            className={`font-medium ${
+-                              isHighlighted ? "text-white" : "text-[#676A75]"
+-                            }`}
+-                          >
+-                            {feature}
+-                          </span>
++                          <span>{feature}</span>
+                         </li>
+                       ))}
+ 
+@@ -528,7 +410,9 @@ export default function Packages() {
+                   </div>
+                   <div className="mt-6">
+                     <p
+-                      className={`text-sm text-[#006D4B] w-full py-3 px-5 font-medium rounded-md bg-[#E0F4EE] text-center`}
++                      className={`text-sm text-[#006D4B] w-full py-3 px-5 font-medium rounded-md bg-[#E0F4EE] text-center ${
++                        isHighlighted ? "" : ""
++                      }`}
+                     >
+                       {plan.note}
+                     </p>
+@@ -538,15 +422,17 @@ export default function Packages() {
+                         handleGetStarted(plan.id);
+                       }}
+                       disabled={!isSelected || plan.isDisabled}
+-                      className={`mt-3 w-full rounded-lg text-sm py-2 font-medium transition-all duration-200 ${
+-                        plan.isDisabled
+-                          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+-                          : isSelected
+-                          ? isHighlighted
+-                            ? "bg-[#FFB951] text-white hover:bg-[#FF8E51] cursor-pointer"
+-                            : "bg-[#FFB951] text-white hover:bg-[#FF8E51] cursor-pointer"
+-                          : "bg-gray-200 text-gray-400 cursor-not-allowed"
+-                      }`}
++                      className={`mt-3 w-full rounded-lg text-sm py-2 font-medium transition-all duration-200
++                    ${
++                      plan.isDisabled
++                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
++                        : isSelected
++                        ? isHighlighted
++                          ? "bg-[#FFB951] text-white hover:bg-[#FF8E51] cursor-pointer"
++                          : "bg-[#FFB951] text-white hover:bg-[#FF8E51] cursor-pointer"
++                        : "bg-gray-200 text-gray-400 cursor-not-allowed"
++                    }
++                  `}
+                     >
+                       {plan.isDisabled
+                         ? "Unavailable"
+@@ -561,8 +447,8 @@ export default function Packages() {
+           </div>
+         </div>
+ 
+-        {/* Stats Section - Commented out as per original */}
+-        {/*
++        {/* Stats Section */}
++        {/**
+         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-6 text-center">
+           {stats.map((stat, idx) => (
+             <div key={idx} className="bg-white space-y-4 rounded-xl p-5 px-7">
+@@ -574,7 +460,7 @@ export default function Packages() {
+             </div>
+           ))}
+         </div>
+-        */}
++ */}
+       </div>
+ 
+       {/* Free Trial Modal */}
+@@ -596,55 +482,9 @@ export default function Packages() {
+               </button>
+               <button
+                 className="px-4 py-2 bg-green-500 border-none h-[40px] text-white rounded-lg hover:bg-green-600 transition-colors"
+-                onClick={confirmCheckout}
+-                disabled={isCheckoutLoading}
++                onClick={confirmSubscription}
+               >
+-                {isCheckoutLoading ? "Processing..." : "Checkout"}
+-              </button>
+-            </div>
+-          </div>
+-        </div>
+-      )}
+-
+-      {/* Email Already Exists Modal */}
+-      {showEmailExistsModal && (
+-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 p-4 sm:p-0 z-50">
+-          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md text-center">
+-            <div className="mb-4">
+-              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100">
+-                <svg
+-                  className="h-6 w-6 text-yellow-600"
+-                  fill="none"
+-                  viewBox="0 0 24 24"
+-                  strokeWidth="1.5"
+-                  stroke="currentColor"
+-                >
+-                  <path
+-                    strokeLinecap="round"
+-                    strokeLinejoin="round"
+-                    d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"
+-                  />
+-                </svg>
+-              </div>
+-            </div>
+-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+-              Account Already Exists
+-            </h3>
+-            <p className="text-sm text-gray-500 mb-6">
+-              We notice this email <span className="font-semibold">({userEmail})</span> already exists in our system. You can either login to your existing account or reset your password if you&apos;ve forgotten it.
+-            </p>
+-            <div className="flex flex-col sm:flex-row gap-3 justify-around">
+-              <button
+-                className="px-4 py-2 bg-white border border-green-600 text-green-600 rounded-lg hover:bg-green-600 hover:text-white transition-colors"
+-                onClick={handleGoToLogin}
+-              >
+-                Go to Login
+-              </button>
+-              <button
+-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+-                onClick={handleResetPassword}
+-              >
+-                Reset Password
++                Continue to SignUp
+               </button>
+             </div>
+           </div>
+@@ -652,4 +492,4 @@ export default function Packages() {
+       )}
+     </section>
+   );
+-}
+\ No newline at end of file
++}

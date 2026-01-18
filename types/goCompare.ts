@@ -3,12 +3,14 @@ export interface SearchRecord {
     asinOrUpc: string
     searchType: string
     searchDate: string
+    originalDate?: Date
     amazonPrice: string
+    rawPrice?: number
     country: string
-    countryCode: string
+    countryCode?: string
     countryId?: number;
-    countryFlag: string
-    stores: Store[]
+    countryFlag?: string
+    stores: Store[] | string[]
     // storeLogo: string
     results: number
 }
@@ -41,6 +43,19 @@ export interface CountryResponse {
     message: string;
     data: Country[];
     meta: Record<string, unknown>[];
+}
+
+export interface Category {
+    id: number;
+    name: string;
+}
+
+export interface CategoriesResponse {
+    status: number;
+    message: string;
+    data: Category[];
+    responseCode: string;
+    meta: unknown[];
 }
 
 export interface ApiSearchResponseItem {
