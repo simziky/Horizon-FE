@@ -18,7 +18,7 @@ const UserProfile = () => {
   
   useEffect(() => {
     router.prefetch("/settings");
-    //router.prefetch("/monitor-list");
+    router.prefetch("/monitor-list");
   }, [router]);
 
   const handleLogout = () => {
@@ -32,7 +32,9 @@ const UserProfile = () => {
       router.push("/settings");
     } else if (key === "logout") {
       setOpenModal(true);
-    } 
+    } else if (key === "monitor-list") {
+      router.push("/monitor-list");
+    }
   };
 
   const items: MenuProps["items"] = [
@@ -40,7 +42,10 @@ const UserProfile = () => {
       label: "Settings",
       key: "settings",
     },
-    
+    {
+      label: "Monitor List",
+      key: "monitor-list",
+    },
     {
       label: "Logout",
       key: "logout",

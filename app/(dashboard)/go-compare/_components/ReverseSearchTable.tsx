@@ -220,3 +220,4 @@ export default function ReverseSearchTable({ products, onRowClick }: ProductTabl
         </div>
     )
 }
+

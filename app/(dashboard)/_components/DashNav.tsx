@@ -188,7 +188,19 @@ const DashNav = () => {
       <div className="flex gap-4 sm:gap-8 md:gap-6 items-center">
         <div className="flex gap-3 ms:gap-6 items-center relative">
           <CountrySelect />
-          
+          <div className="relative">
+            <VscBell
+              size={25}
+              className=" cursor-pointer"
+              color="#18cb96"
+              onClick={() => setOpen(true)}
+            />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-[8px] rounded-full flex items-center justify-center">
+                {displayCount}
+              </span>
+            )}
+          </div>
           <UserProfile />
         </div>
 

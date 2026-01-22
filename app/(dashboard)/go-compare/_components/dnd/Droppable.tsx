@@ -20,3 +20,4 @@ export function Droppable({ id, children, className = "" }: DroppableProps) {
     </div>
   )
 }
+

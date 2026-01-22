@@ -17,7 +17,7 @@ import { HiOutlineUsers } from "react-icons/hi2"
 import KeepaChart from "./keepa-chart"
 import { debounce } from "@/utils/debounce"
 import FinalLoader from "../../dashboard/_components/loader"
-
+import MonitorButton from "./MonitorButton"
 
 // Define the Product interface
 export interface Product {
@@ -279,7 +279,9 @@ const handleCategoryClick = (categoryId: number) => {
             <div className="rounded-lg border border-border flex flex-col divide-y divide-[#EDEDED] text-[#252525] text-sm">
               <span className="p-4 border-b border-border mb-2 flex justify-between items-center">
                 <p className="bg-primary rounded-2xl py-2 px-4 text-white font-semibold w-max">Store Details</p>
-               
+                {sellerId && marketplaceId && (
+                  <MonitorButton sellerId={sellerId} marketplaceId={marketplaceId} />
+                )}
               </span>
               <span className="p-4 bg-[#F7F7F7] flex justify-between items-center font-medium">
                 <p>Seller Name</p>
