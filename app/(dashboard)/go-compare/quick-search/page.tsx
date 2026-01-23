@@ -639,6 +639,7 @@ export default function QuickSearch() {
                                     image_url: amazonProductDetailsResult.data.data.image_url,
                                     price: amazonProductDetailsResult.data.data.current_price.toString(),
                                     product_url: amazonProductDetailsResult.data.data.product_url,
+                                    amazon_link: amazonProductDetailsResult.data.data.amazon_link,
                                     store_name: "Amazon",
                                     currency: "USD",
                                     country: "US",

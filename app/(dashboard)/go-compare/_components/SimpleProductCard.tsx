@@ -1,5 +1,6 @@
 import React from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { AmazonProduct, ProductObj, ReverseAmazon, ReverseAmazonScraped, QuickSearchResult } from "@/types/goCompare";
 
 type ProductCardType = ProductObj | AmazonProduct | ReverseAmazon | ReverseAmazonScraped | QuickSearchResult;
@@ -34,6 +35,12 @@ const hasPrice = (product: unknown): product is { price: string | number } =>
 const hasStore = (product: unknown): product is { store: string } => 
   product !== null && typeof product === 'object' && 'store' in product && typeof (product as Record<string, unknown>).store === 'string';
 
+const hasProductUrl = (product: unknown): product is { product_url: string } => 
+  product !== null && typeof product === 'object' && 'product_url' in product && typeof (product as Record<string, unknown>).product_url === 'string';
+
+const hasAmazonLink = (product: unknown): product is { amazon_link: string } => 
+  product !== null && typeof product === 'object' && 'amazon_link' in product && typeof (product as Record<string, unknown>).amazon_link === 'string';
+
 // Function to create a short name from the full product name
   const createShortName = (fullName: string): string => {
     if (!fullName) return 'Product Name';
@@ -61,6 +68,7 @@ const hasStore = (product: unknown): product is { store: string } =>
   let productName = '';
   let price: string | number = 0;
   let storeName = '';
+  let productUrl = '';
 
   try {
     // Handle different product data structures
@@ -99,6 +107,13 @@ const hasStore = (product: unknown): product is { store: string } =>
       storeName = 'Unknown Store';
     }
 
+    // Extract product URL (amazon_link takes priority)
+    if (hasAmazonLink(product)) {
+      productUrl = product.amazon_link;
+    } else if (hasProductUrl(product)) {
+      productUrl = product.product_url;
+    }
+
     // Extract price
     if (hasPrice(product)) {
       if (typeof product.price === 'number') {
@@ -119,6 +134,7 @@ const hasStore = (product: unknown): product is { store: string } =>
     imageUrl = '';
     productName = 'Product Name';
     storeName = 'Unknown Store';
+    productUrl = '';
     price = 0;
   }
 
@@ -150,9 +166,21 @@ const hasStore = (product: unknown): product is { store: string } =>
         />
       </div>
       <div className="mt-auto p-2">
-        <div className="text-sm text-left mb-2 line-clamp-2 block" title={productName}>
-          {productName}
-        </div>
+        {productUrl ? (
+          <Link 
+            href={productUrl} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-sm text-left mb-2 line-clamp-2 block hover:underline hover:text-primary" 
+            title={productName}
+          >
+            {productName}
+          </Link>
+        ) : (
+          <div className="text-sm text-left mb-2 line-clamp-2 block" title={productName}>
+            {productName}
+          </div>
+        )}
         <div className="flex flex-wrap items-center justify-between mt-2">
           <span className="text-xl font-bold">
             {displayPrice}
