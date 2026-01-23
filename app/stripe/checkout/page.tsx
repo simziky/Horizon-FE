@@ -15,7 +15,7 @@ export default function StripeCheckout() {
   const router = useRouter();
   const status = searchParams.get("status");
   const [loading, setLoading] = useState(false);
-  const [failed, setFailed] = useState(status !== "success");//
+  const [failed, setFailed] = useState(status !== "success");
   const [verifySubscription] = useVerifyStripeSubscriptionMutation();
   const [verificationToken, setVerificationToken] = useState<string>("");
 

@@ -126,6 +126,7 @@ export interface QuickSearchResult {
     price: string;
     currency: string;
     country: string;
+    amazon_link: string;
     product_url: string;
     created_at: string;
     profit_margin: number;
