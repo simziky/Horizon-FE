@@ -126,7 +126,7 @@ function DraggableRow({
                   href={quickSearchProduct.product_url} 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="text-sm font-medium hover:underline"
+                  className="text-sm font-medium hover:text-[#18CB96] hover:underline"
                 >
                   {quickSearchProduct.store_name || 'Unknown Store'}
                 </a>
@@ -177,7 +177,7 @@ function DraggableRow({
                   href={productObj.scraped_product.product_url} 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="text-sm font-medium hover:underline"
+                  className="text-sm font-medium hover:text-[#18CB96] hover:underline"
                 >
                   {productObj.store?.name || 'Unknown Store'}
                 </a>
