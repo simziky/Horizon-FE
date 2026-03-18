@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import MonitorSellersList from "./_coponents/Monitor";
+import MonitorSellersList from "@/components/features/monitor-list/Monitor";
 
 
 export const metadata: Metadata = {

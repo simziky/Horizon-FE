@@ -36,8 +36,6 @@ export default function StripeCheckout() {
       verifySubscription({ session_id: sessionId })
         .unwrap()
         .then((response) => {
-          console.log("Verification response:", response);
-
           // Extract token from the response
           const token = response?.data?.token;
           if (token) {
@@ -47,8 +45,7 @@ export default function StripeCheckout() {
           setLoading(false);
           setFailed(false);
         })
-        .catch((error) => {
-          console.error("Verification failed:", error);
+        .catch(() => {
           setLoading(false);
           setFailed(true);
         });

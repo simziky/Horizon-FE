@@ -1,5 +1,11 @@
 import { Metadata } from "next";
-import Navigation from "./_components/Navigation";
+import dynamic from "next/dynamic";
+
+const Navigation = dynamic(() => import("@/components/features/go-compare/Navigation"), {
+  loading: () => (
+    <div className="h-16 w-full animate-pulse rounded-lg bg-[#F3F4F6]" />
+  ),
+});
 
 export const metadata: Metadata = {
   title: "Go Compare",

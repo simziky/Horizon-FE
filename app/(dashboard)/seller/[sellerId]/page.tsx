@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import Seller from "../_components/Seller";
+import Seller from "@/components/features/seller/Seller";
 
 export const metadata: Metadata = {
   title: "Other Sellers",

@@ -16,7 +16,7 @@ const initialState: globalState = {
     subScriptionId: null,
     marketplaceId: 6,
     currencyCode: "CAD",
-    currencySymbol:"C$",
+    currencySymbol: "C$",
     ipAlert: {
       setIpIssue: 0,
       eligibility: false

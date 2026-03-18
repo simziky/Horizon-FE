@@ -5,7 +5,7 @@ import { baseQueryForAuth } from "../queryInterceptor";
 export const userApi = createApi({
   reducerPath: "user",
   refetchOnReconnect: true,
-  refetchOnMountOrArgChange: 10,
+  refetchOnMountOrArgChange: 300, // 5 min — all endpoints are lazy queries, triggered manually
   baseQuery: baseQueryForAuth,
   endpoints: (builder) => ({
 
@@ -43,8 +43,8 @@ export const userApi = createApi({
       }),
     }),
     getNotifications: builder.query({
-      query: () => ({
-        url: "customer/notifications",
+      query: (page: number = 1) => ({
+        url: `customer/notifications?page=${page}`,
         method: "GET",
       }),
     }),

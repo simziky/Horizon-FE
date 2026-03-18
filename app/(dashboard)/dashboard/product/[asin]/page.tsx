@@ -2,7 +2,7 @@
 
 import React, { useMemo } from "react";
 import { useParams } from "next/navigation";
-import ProductDetails from "../../_components/ProductDetails";
+import ProductDetails from "@/components/features/dashboard/ProductDetails";
 import { useAppSelector } from "@/redux/hooks";
 
 export interface ProductDetailsProps {
@@ -13,7 +13,7 @@ export interface ProductDetailsProps {
 const ProductPage = React.memo(() => {
   const params = useParams();
   const asin = params?.asin as string;
-  const { marketplaceId } = useAppSelector((state) => state?.global);
+  const marketplaceId = useAppSelector((state) => state?.global?.marketplaceId);
   
   // Memoize props to prevent unnecessary re-renders
   const productDetailsProps = useMemo(() => ({

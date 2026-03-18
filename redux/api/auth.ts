@@ -6,7 +6,7 @@ import Cookies from "js-cookie";
 export const authApi = createApi({
   reducerPath: "auth",
   refetchOnReconnect: true,
-  refetchOnMountOrArgChange: 10,
+  refetchOnMountOrArgChange: 300, // 5 min — static/semi-static data; mutations use tag invalidation
   baseQuery: baseQueryForAuth,
   tagTypes: ["Profile"],
   endpoints: (builder) => ({

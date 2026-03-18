@@ -27,6 +27,7 @@ const AuthSteps = () => {
       // Always sync with context currentStep
       setDisplayStep(currentStep);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, setCurrentStep]); // Removed currentStep from dependencies to prevent loops
 
   // Additional effect to ensure displayStep always follows currentStep changes

@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import Settings from "./_components/Settings";
+import Settings from "@/components/features/settings/Settings";
 
 export const metadata: Metadata = {
   title: "Settings",

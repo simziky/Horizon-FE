@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import Subscriptions from "./_components/Subscriptions";
+import Subscriptions from "@/components/features/subscriptions/Subscriptions";
 
 export const metadata: Metadata = {
   title: "Subscriptions",

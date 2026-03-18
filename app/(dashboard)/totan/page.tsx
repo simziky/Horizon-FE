@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import TotanChat from "./_components/Totan";
+import TotanChat from "@/components/features/totan/Totan";
 
 export const metadata: Metadata = {
   title: "Totan AI",

@@ -7,18 +7,18 @@ import Image from "next/image";
 import { usePathname, useSearchParams } from 'next/navigation';
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { TbListSearch } from "react-icons/tb";
-import { Droppable } from "../_components/dnd/Droppable";
-import { ProductCard } from "../_components/ProductCard";
-import SimpleProductCard from "../_components/SimpleProductCard";
-import Overlay from "../_components/dnd/Overlay";
-import ProductInformation from "../_components/ProductInformation";
-import QuickSearchTable from "../_components/QuickSearchTable";
+import { Droppable } from "@/components/features/go-compare/dnd/Droppable";
+import { ProductCard } from "@/components/features/go-compare/ProductCard";
+import SimpleProductCard from "@/components/features/go-compare/SimpleProductCard";
+import Overlay from "@/components/features/go-compare/dnd/Overlay";
+import ProductInformation from "@/components/features/go-compare/ProductInformation";
+import QuickSearchTable from "@/components/features/go-compare/QuickSearchTable";
 import { ProductObj, QuickSearchData, QuickSearchResult } from "@/types/goCompare";
 // Ensure we're using the latest type definitions
 import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 import { SerializedError } from "@reduxjs/toolkit";
-import GoCompareLoader from "../_components/Loader";
-import Loader from "@/utils/loader";
+import GoCompareLoader from "@/components/features/go-compare/Loader";
+import Loader from "@/components/ui/Loader";
 
 export default function QuickSearch() {
     const params = useSearchParams();
@@ -64,53 +64,23 @@ export default function QuickSearch() {
 
     // Capture searchId from initial quick search response
     useEffect(() => {
-        console.log('useEffect triggered - quickSearchResult.data:', !!quickSearchResult.data, 'searchId:', searchId, 'currentSearchId:', currentSearchId);
-        console.log('quickSearchResult.isLoading:', quickSearchResult.isLoading);
-        console.log('quickSearchResult.isError:', quickSearchResult.isError);
-        console.log('quickSearchResult.error:', quickSearchResult.error);
-        
         if (quickSearchResult.data && !searchId && !currentSearchId) {
-            console.log('Full quickSearchResult.data structure:', quickSearchResult.data);
-            console.log('quickSearchResult.data type:', typeof quickSearchResult.data);
-            console.log('quickSearchResult.data keys:', Object.keys(quickSearchResult.data));
-            
             // Try different possible paths for the ID
             const responseSearchId1 = quickSearchResult.data?.data?.id;
             const responseSearchId2 = quickSearchResult.data?.id;
             const responseSearchId3 = (quickSearchResult.data as any)?.id;
             
-            console.log('Trying data.data.id:', responseSearchId1);
-            console.log('Trying data.id:', responseSearchId2);
-            console.log('Trying direct id:', responseSearchId3);
-            
             const responseSearchId = responseSearchId1 || responseSearchId2 || responseSearchId3;
             
             if (responseSearchId) {
-                console.log('Captured searchId from initial response:', responseSearchId);
                 setCurrentSearchId(responseSearchId);
-            } else {
-                console.log('No searchId found in initial response');
-                console.log('Available data structure:', JSON.stringify(quickSearchResult.data, null, 2));
             }
         }
     }, [quickSearchResult.data, searchId, currentSearchId, quickSearchResult.isLoading, quickSearchResult.isError, quickSearchResult.error]);
 
-    // Log the raw API response for debugging (only in development)
-    useEffect(() => {
-        if (process.env.NODE_ENV === 'development') {
-            if (quickSearchResult.data) {
-                console.log("Quick Search API Response:", quickSearchResult.data);
-            }
-            if (searchByIdResult.data) {
-                console.log("Search By ID API Response:", searchByIdResult.data);
-            }
-        }
-    }, [quickSearchResult.data, searchByIdResult.data]);
-
     const result: QueryResult = (() => {
         // Prioritize refresh search result if available and has data
         if (refreshSearchResult.data) {
-            console.log('Refresh search result:', refreshSearchResult);
             return {
                 data: refreshSearchResult.data?.data || refreshSearchResult.data,
                 isLoading: refreshSearchResult.isLoading,
@@ -214,16 +184,6 @@ export default function QuickSearch() {
     }, [data]);
 
 
-    // Get ASIN for product details API call
-    // Log the values being sent to the query only in development
-    if (process.env.NODE_ENV === 'development') {
-        console.log("Selected ASIN:", selectedAsin);
-        console.log("Marketplace ID:", marketplace_id);
-        console.log("Selected Sales Price:", selectedSalesPrice);
-        console.log("Final ASIN for API:", selectedAsin || asin || '');
-        console.log("Final Sales Price for API:", selectedSalesPrice || undefined);
-    }
-
     // Left Container API - Amazon Product Details
     const amazonProductDetailsResult = useGetProductDetailsQuery(
         { asin: selectedAsin || asin || '', marketplace_id: marketplace_id || 1 },
@@ -242,26 +202,6 @@ export default function QuickSearch() {
         }
     );
     
-    // Log the product details response for debugging
-    useEffect(() => {
-        if (amazonProductDetailsResult.data && process.env.NODE_ENV === 'development') {
-            console.log("Amazon Product details response:", amazonProductDetailsResult.data);
-            console.log("Amazon Product current_price:", amazonProductDetailsResult.data.data?.current_price);
-            console.log("Amazon Product data structure:", amazonProductDetailsResult.data.data);
-            console.log("Amazon Product isLoading:", amazonProductDetailsResult.isLoading);
-            console.log("Amazon Product isFetching:", amazonProductDetailsResult.isFetching);
-        }
-        if (amazonProductDetailsResult.error) {
-            console.error("Amazon Product details error:", amazonProductDetailsResult.error);
-        }
-        if (comparisonProductDetailsResult.data && process.env.NODE_ENV === 'development') {
-            console.log("Comparison Product details response:", comparisonProductDetailsResult.data);
-        }
-        if (comparisonProductDetailsResult.error) {
-            console.error("Comparison Product details error:", comparisonProductDetailsResult.error);
-        }
-    }, [amazonProductDetailsResult.data, amazonProductDetailsResult.error, amazonProductDetailsResult.isLoading, amazonProductDetailsResult.isFetching, comparisonProductDetailsResult.data, comparisonProductDetailsResult.error]);
-
     // Background refetch logic for incomplete data
     useEffect(() => {
         let refetchInterval: NodeJS.Timeout | null = null;
@@ -273,11 +213,7 @@ export default function QuickSearch() {
                 const activeSearchId = searchId || currentSearchId;
                 
                 if (activeSearchId) {
-                    // Use the new refresh endpoint for better performance
-                    console.log('Using refresh endpoint with searchId:', activeSearchId);
                     triggerRefreshSearch({ searchId: activeSearchId, perPage: 10 });
-                } else {
-                    console.log('No searchId available, skipping auto-refresh');
                 }
             }, 10000); // 10 seconds
         }
@@ -299,9 +235,6 @@ export default function QuickSearch() {
     )
 
     const handleDragStart = useCallback((event: DragStartEvent) => {
-        if (process.env.NODE_ENV === 'development') {
-            console.log("Drag started:", event)
-        }
         const { active } = event
 
         // Extract the product directly from event data if available
@@ -350,10 +283,6 @@ export default function QuickSearch() {
 
     const handleDragEnd = useCallback((event: DragEndEvent) => {
         const { active, over } = event
-        if (process.env.NODE_ENV === 'development') {
-            console.log("Drag ended:", { active, over })
-        }
-        
         // Reset active product
         setActiveProduct(null)
         
@@ -366,18 +295,14 @@ export default function QuickSearch() {
                         // Update selected ASIN and price for product details
                         // Match the exact logic from handleRowClick
                         if ('asin' in draggedProduct) {
-                            console.log("Drag setting ASIN:", draggedProduct.asin, "Price:", draggedProduct.price);
                             setSelectedSalesPrice(draggedProduct.price);
                             setSelectedAsin(draggedProduct.asin);
                             setSelectedProducts([draggedProduct]);
                         } else if ('scraped_product' in draggedProduct) {
-                            console.log("Drag setting ASIN:", draggedProduct.scraped_product.id, "Price:", draggedProduct.scraped_product.price.formatted);
                             setSelectedSalesPrice(draggedProduct.scraped_product.price.formatted);
                             setSelectedAsin(draggedProduct.scraped_product.id);
                             setSelectedProducts([draggedProduct]);
                         } else if ('store_name' in draggedProduct) {
-                            // Fallback for QuickSearchResult without asin property
-                            console.log("Drag QuickSearchResult fallback - using original ASIN:", asin, "Price:", draggedProduct.price);
                             setSelectedSalesPrice(draggedProduct.price);
                             setSelectedAsin(asin);
                             setSelectedProducts([draggedProduct]);
@@ -405,8 +330,6 @@ export default function QuickSearch() {
                                  `${product.store_name}-${product.asin}` === active.id
                 )
                 if (draggedProduct) {
-                    // Use product's asin (same as handleRowClick)
-                    console.log("Results array drag - setting ASIN:", draggedProduct.asin, "Price:", draggedProduct.price);
                     setSelectedSalesPrice(draggedProduct.price);
                     setSelectedAsin(draggedProduct.asin);
                     setSelectedProducts([draggedProduct as any]);
@@ -422,8 +345,6 @@ export default function QuickSearch() {
                                      `${product.store_name}-${product.asin}` === active.id
                 )
                 if (draggedProduct) {
-                    // Use product's asin (same as handleRowClick)
-                    console.log("Fallback drag - setting ASIN:", draggedProduct.asin, "Price:", draggedProduct.price);
                     setSelectedSalesPrice(draggedProduct.price);
                     setSelectedAsin(draggedProduct.asin);
                     setSelectedProducts([draggedProduct as any]);
@@ -444,12 +365,6 @@ export default function QuickSearch() {
     }, [data, asin])
 
     const handleRowClick = (product: ProductObj | QuickSearchResult) => {
-        console.log("Row clicked - Product:", product);
-        console.log("Product keys:", Object.keys(product));
-        console.log("Product has 'asin' property:", 'asin' in product);
-        console.log("Product has 'scraped_product' property:", 'scraped_product' in product);
-        console.log("Product has 'store_name' property:", 'store_name' in product);
-
         // Clear previous selection first to ensure clean state
         setSelectedProducts([]);
         setSelectedAsin(null);
@@ -457,20 +372,15 @@ export default function QuickSearch() {
 
         setSelectedProducts([product as any])
         if ('asin' in product) {
-            console.log("Setting ASIN:", product.asin, "Price:", product.price);
             setSelectedAsin(product.asin);
             setSelectedSalesPrice(product.price);
         } else if ('scraped_product' in product) {
-            console.log("Setting ASIN:", product.scraped_product.id, "Price:", product.scraped_product.price.formatted);
             setSelectedAsin(product.scraped_product.id);
             setSelectedSalesPrice(product.scraped_product.price.formatted);
         } else if ('store_name' in product) {
             // This is a QuickSearchResult - use the original search ASIN and the product's price
-            console.log("QuickSearchResult detected - using original ASIN:", asin, "Price:", (product as any).price);
-            setSelectedAsin(asin); // Use the ASIN from the original search
+            setSelectedAsin(asin);
             setSelectedSalesPrice((product as any).price);
-        } else {
-            console.log("Product doesn't match expected structure");
         }
 
         // Scroll to Comparison Workspace section with smooth behavior
@@ -529,13 +439,6 @@ export default function QuickSearch() {
             : 'N/A'
     }
 
-    // Debug logging for product data
-    if (process.env.NODE_ENV === 'development') {
-        console.log("Product Data object:", productData);
-        console.log("Using comparison API data:", !!comparisonProductDetailsResult.data?.data);
-        console.log("Gross ROI value:", productDetailsForInfo?.gross_roi);
-    }
-
     useEffect(() => {
         const currentParams = { asin, marketplace_id, queue };
         const hasParamsChanged =
@@ -579,8 +482,6 @@ export default function QuickSearch() {
         let errorDetails = "";
         
         if (error && typeof error === 'object') {
-            console.log("Error object:", error); // Log the full error object for debugging
-            
             if ('status' in error) {
                 const status = error.status;
                 errorDetails = `Status: ${status}`;
@@ -605,8 +506,6 @@ export default function QuickSearch() {
                 errorMessage = "Network error: Unable to connect to the server";
             }
         }
-        
-        console.error("Quick Search failed:", errorMessage, errorDetails ? `(${errorDetails})` : "");
         
         return (
             <div className="p-4 border border-red-300 bg-red-50 rounded-md">

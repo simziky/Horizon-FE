@@ -20,8 +20,6 @@ const ResetPassword = () => {
   const tokenValue = params.get("token");
   const emailValue = params.get("email");
   const [messageApi, contextHolder] = message.useMessage();
-  console.log("Token from URL:", tokenValue);
-
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {

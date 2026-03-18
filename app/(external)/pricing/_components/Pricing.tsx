@@ -210,9 +210,6 @@ export default function Pricing() {
   };
 
   const handlePlanSelection = (plan: any) => {
-    // Handle the plan selection logic here with window redirect for iframe usage
-    console.log("Selected plan:", plan);
-
     // Construct URL with parameters
     const url = `/signUp?ref=${refCode || ""}&pricing=${plan.id}`;
 

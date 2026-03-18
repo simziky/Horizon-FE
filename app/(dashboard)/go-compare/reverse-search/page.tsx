@@ -2,7 +2,7 @@
 import { useReverseSearchMutation } from '@/redux/api/quickSearchApi';
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
-import GoCompareLoader from '../_components/Loader';
+import GoCompareLoader from '@/components/features/go-compare/Loader';
 
 export default function ReverseSearch() {
     const params = useSearchParams();
@@ -19,21 +19,17 @@ export default function ReverseSearch() {
     const [isProcessing, setIsProcessing] = useState(false);
 
     useEffect(() => {
-        console.log('Reverse Search Effect - seller_id:', seller_id, 'hasTriggered:', hasTriggered);
         if (seller_id && !hasTriggered) {
-            console.log('Triggering reverse search with:', { seller_id, marketplaceId, category_id });
             setHasTriggered(true);
             setIsProcessing(true);
             
             reverseSearch({ seller_id, marketplaceId, category_id })
                 .unwrap()
-                .then((response) => {
-                    console.log('Reverse search success:', response);
+                .then(() => {
                     setIsProcessing(false);
                     setShowModal(true);
                 })
                 .catch((err: unknown) => {
-                    console.error('Reverse search error:', err);
                     const error = err as { status?: number; data?: { message?: string } };
                     
                     // Handle specific error status codes

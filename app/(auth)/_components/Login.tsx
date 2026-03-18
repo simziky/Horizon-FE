@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react/no-unescaped-entities */
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -8,7 +7,6 @@ import Link from "next/link";
 import { IoEyeOffOutline, IoEyeOutline } from "react-icons/io5";
 import { useLoginMutation } from "@/redux/api/auth";
 import { message } from "antd";
-import { email, password } from "@/lib/validationSchema";
 import { useDispatch } from "react-redux";
 import { logout } from "@/redux/slice/authSlice";
 import Cookies from "js-cookie";
@@ -83,7 +81,6 @@ const handleSubmit = async (
     }
   } catch (error) {
     messageApi.error("Login Failed");
-    console.log(error);
     const errorMessage =
       (error as { message?: string; data?: { message?: string } })?.data
         ?.message || "An error occurred";

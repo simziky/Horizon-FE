@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useLazyGetPricingQuery } from "@/redux/api/auth";
@@ -164,7 +163,6 @@ const RenewSubscription = () => {
 
   const confirmSubscription = () => {
     if (!selectedPlanId) {
-      console.error("No plan selected");
       return;
     }
     renew({

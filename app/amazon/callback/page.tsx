@@ -38,7 +38,6 @@ export default function CallbackPage() {
         router.push(signupUrl.toString());
         
       } catch (err) {
-        console.error(err);
         setLoading(false);
 
         interface ApiError {

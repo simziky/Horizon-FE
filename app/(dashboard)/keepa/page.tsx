@@ -1,9 +1,20 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import KeepaSearch from "./_components/KeepaSearch"
-import KeepaChart from "./_components/KeepaChart"
-import ErrorMessage from "./_components/ErrorMessage"
+import dynamic from "next/dynamic"
+import KeepaSearch from "@/components/features/keepa/KeepaSearch"
+const KeepaChart = dynamic(() => import("@/components/features/keepa/KeepaChart"), {
+  ssr: false,
+  loading: () => (
+    <div className="border border-border rounded-xl p-6 bg-white">
+      <div className="animate-pulse">
+        <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+        <div className="h-64 bg-gray-200 rounded"></div>
+      </div>
+    </div>
+  ),
+})
+import ErrorMessage from "@/components/features/keepa/ErrorMessage"
 import { useLazyProductSummaryQuery } from "@/redux/api/keepa"
 import { useAppSelector } from "@/redux/hooks"
 
@@ -47,8 +58,7 @@ export default function KeepaPage() {
       } else {
         setError("Product not found or no data available for the provided ASIN. Please check the ASIN and try again.")
       }
-    } catch (err) {
-      console.error("Error fetching product data:", err)
+    } catch {
       setError("Failed to fetch product data. The product may not exist in the selected marketplace, or there was a network issue.")
     } finally {
       setIsLoading(false)
@@ -67,6 +77,7 @@ export default function KeepaPage() {
       setInitialAsin(asinParam) // Set the initial ASIN value
       handleProductSearch(asinParam)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [marketplaceId])
 
 

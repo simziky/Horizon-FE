@@ -39,7 +39,6 @@ const PreSignUp = () => {
     e.preventDefault();
 
     if (!selectedPlan) {
-      console.error("No plan selected");
       return;
     }
 
@@ -66,13 +65,9 @@ const PreSignUp = () => {
           } else {
             window.open(res?.data?.url, "_blank");
           }
-        } else {
-          console.error("No checkout URL returned");
-          
         }
       })
       .catch((err) => {
-        console.error(err);
         error(err?.data?.message)
       });
   };

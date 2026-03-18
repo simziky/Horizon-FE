@@ -4,7 +4,7 @@ import { baseQuery } from "../queryInterceptor";
 export const monitorApi = createApi({
   reducerPath: "monitorApi",
   refetchOnReconnect: true,
-  refetchOnMountOrArgChange: 10,
+  refetchOnMountOrArgChange: 300, // 5 min — monitor/unmonitor mutations invalidate tags directly
   baseQuery: baseQuery,
   tagTypes: ["MonitoredSellers"],
   endpoints: (builder) => ({

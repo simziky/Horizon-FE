@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import UpcScanner from "./_components/UpcScanner";
+import UpcScanner from "@/components/features/upc-scanner/UpcScanner";
 
 export const metadata: Metadata = {
   title: "UPC Scanner",

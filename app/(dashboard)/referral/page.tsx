@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import Referral from "./_components/Referral";
+import Referral from "@/components/features/referral/Referral";
 
 export const metadata: Metadata = {
   title: "Refer and Earn",

@@ -18,11 +18,9 @@ const SignUp = () => {
   const [expires, setExpires] = useState("");
   const [token, setToken] = useState("");
 
-  const [signUp, { data, isLoading }] = useSetPasswordMutation();
+  const [signUp, { isLoading }] = useSetPasswordMutation();
   const [login] = useLoginMutation();
   const [messageApi, contextHolder] = message.useMessage();
-  console.log(data);
-
   useEffect(() => {
     // Extract the expires value from the URL
     const params = new URLSearchParams(window.location.search);
@@ -31,7 +29,6 @@ const SignUp = () => {
     const tokenValue = params.get("signature");
     if (expiresValue) {
       setExpires(expiresValue);
-      console.log("Expires value set to:", expiresValue); // Log the value
     }
     if (tokenValue) setToken(tokenValue);
     if (emailValue) setEmail(emailValue);
@@ -77,9 +74,8 @@ const SignUp = () => {
           router.push("/connect-amazon");
         }
         messageApi.success("Registration & Login Successful");
-      } catch (error) {
+      } catch {
         messageApi.error("Registration Failed");
-        console.log(error);
       }
     },
   });

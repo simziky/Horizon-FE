@@ -13,7 +13,7 @@ import {
   HiOutlinePlayCircle,
 } from "react-icons/hi2";
 import Link from "next/link";
-import { CustomSelect as Select } from "@/lib/AntdComponents";
+import { CustomSelect as Select } from "@/components/ui/AntdComponents";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStep } from "@/context/authContext";
 import { useLazyCreateStripeSubscriptionV2Query } from "@/redux/api/subscriptionApi";
@@ -134,11 +134,13 @@ const [emailError, setEmailError] = useState<string>("");
   // Sync formik values with main form state
   useEffect(() => {
     emailFormik.setFieldValue('email', form.email);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.email]);
 
   useEffect(() => {
     passwordFormik.setFieldValue('password', form.password);
     passwordFormik.setFieldValue('confirmPassword', form.confirmPassword);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.password, form.confirmPassword]);
 
   
@@ -148,7 +150,7 @@ const [emailError, setEmailError] = useState<string>("");
     try {
       sessionStorage.setItem(key, JSON.stringify(value));
     } catch (error) {
-      console.warn(`Failed to save ${key} to sessionStorage:`, error);
+      // sessionStorage write failed (private browsing or quota exceeded)
     }
   };
 
@@ -157,7 +159,7 @@ const [emailError, setEmailError] = useState<string>("");
       const stored = sessionStorage.getItem(key);
       return stored ? JSON.parse(stored) : defaultValue;
     } catch (error) {
-      console.warn(`Failed to load ${key} from sessionStorage:`, error);
+      // sessionStorage read failed
       return defaultValue;
     }
   };
@@ -168,7 +170,7 @@ const [emailError, setEmailError] = useState<string>("");
         sessionStorage.removeItem(key);
       });
     } catch (error) {
-      console.warn("Failed to clear sessionStorage:", error);
+      // sessionStorage clear failed
     }
   };
 
@@ -189,7 +191,6 @@ const [emailError, setEmailError] = useState<string>("");
     // Load form data from session storage first
     const savedForm = loadFromSessionStorage(SESSION_KEYS.FORM_DATA, {});
     if (Object.keys(savedForm).length > 0) {
-      console.log('Loading saved form data:', savedForm);
       setForm(prev => ({ 
         ...prev, 
         ...savedForm,
@@ -224,7 +225,6 @@ const [emailError, setEmailError] = useState<string>("");
   useEffect(() => {
     // Only save if form has meaningful data to prevent overwriting with empty initial state
     if (form.fullname || form.email || form.amazonStatus || form.categories.length > 0 || form.country) {
-      console.log('Saving form data to session storage:', form);
       saveToSessionStorage(SESSION_KEYS.FORM_DATA, form);
     }
   }, [form]);
@@ -341,6 +341,7 @@ const [emailError, setEmailError] = useState<string>("");
     if (startingStep >= 3 && !dataFetched) {
       fetchRequiredData();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, setCurrentStep]);
 
   // Function to fetch required data with bearer token
@@ -356,6 +357,7 @@ const [emailError, setEmailError] = useState<string>("");
     if (currentStep >= 3 && !dataFetched) {
       fetchRequiredData();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep, dataFetched]);
 
   const error = (err: string) => {
@@ -384,7 +386,6 @@ const [emailError, setEmailError] = useState<string>("");
 
   const confirmSubscription = () => {
     if (!selectedPlan) {
-      console.error("No plan selected");
       error("No pricing plan found. Please try again.");
       return;
     }
@@ -422,14 +423,11 @@ const [emailError, setEmailError] = useState<string>("");
             window.open(res?.data?.url, "_blank");
           }
         } else {
-          console.error("No checkout URL returned");
           error("Failed to create checkout session. Please try again.");
           // FIX: Manually set loading state to false on failure
           setIsCheckoutLoading(false);
         }
       }).catch ((err: any)=> {
-      console.error("Checkout error:", err);
-      
       // Check if it's the email already exists error
       if (err?.data?.responseCode === "91" || 
           (err?.data?.status === 422 && err?.data?.message?.includes("already registered"))) {
@@ -472,7 +470,6 @@ const [emailError, setEmailError] = useState<string>("");
     newUrl.searchParams.set("step", "7");
     window.history.replaceState({}, "", newUrl.toString());
   } catch (err: any) {
-    console.error("Update user error:", err);
     error(
       err?.data?.message || "Failed to update profile. Please try again."
     );
@@ -524,7 +521,6 @@ const [emailError, setEmailError] = useState<string>("");
         fetchRequiredData();
       }
     } catch (err: any) {
-      console.error("Set password error:", err);
       error(err?.data?.message || "Failed to set password. Please try again.");
     }
   };
@@ -539,7 +535,6 @@ const [emailError, setEmailError] = useState<string>("");
       await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate loading
       router.push("/dashboard");
     } catch (err) {
-      console.error("Dashboard navigation error:", err);
       error("Failed to navigate to dashboard. Please try again.");
       setIsDashboardNavigating(false);
     }
@@ -572,8 +567,6 @@ const [emailError, setEmailError] = useState<string>("");
       }
       
     } catch (err: any) {
-      console.error("Email check error:", err);
-      
       // ✅ Show modal for email exists error
       if (err?.data?.responseCode === "91" || err?.status === 422) {
         setShowEmailExistsModal(true);

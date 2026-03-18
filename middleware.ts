@@ -13,7 +13,11 @@ export function middleware(request: NextRequest) {
     '/referral',
     '/history',
     '/seller',
-    '/go-compare'
+    '/go-compare',
+    '/upc-scanner',
+    '/keepa',
+    '/totan',
+    '/monitor-list',
   ];
 
   // Check if the request is for a protected path
@@ -36,7 +40,11 @@ export const config = {
     '/subscriptions',
     '/referral',
     '/history',
-    '/seller',
-    '/go-compare'
+    '/seller/:path*',
+    '/go-compare/:path*',
+    '/upc-scanner/:path*',
+    '/keepa',
+    '/totan',
+    '/monitor-list',
   ],
 }; 

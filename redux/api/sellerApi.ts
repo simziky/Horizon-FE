@@ -4,7 +4,7 @@ import { baseQueryForAuth } from "../queryInterceptor";
 export const sellerApi = createApi({
   reducerPath: "Seller",
   refetchOnReconnect: true,
-  refetchOnMountOrArgChange: 10,
+  refetchOnMountOrArgChange: 300, // 5 min — all endpoints are lazy queries, triggered manually
   baseQuery: baseQueryForAuth,
   tagTypes: [""],
   endpoints: (builder) => ({

@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import History from "./_components/History";
+import History from "@/components/features/history/History";
 
 export const metadata: Metadata = {
   title: "History",

@@ -75,7 +75,6 @@ export async function GET(
     // Forward the request to the backend API
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:8000';
     
-    console.log(`Fetching from: ${baseUrl}/upc-scanner/${scanId}`);
     const response = await fetch(`${baseUrl}/upc-scanner/${scanId}`, {
       method: 'GET',
       headers: {

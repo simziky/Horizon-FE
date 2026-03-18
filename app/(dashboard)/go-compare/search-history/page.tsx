@@ -1,8 +1,8 @@
 "use client";
 import { useMemo, useState } from "react";
 import { useSearchHistoryQuery } from "@/redux/api/quickSearchApi";
-import Loader from "@/utils/loader";
-import TablePagination from "../_components/TablePagination";
+import Loader from "@/components/ui/Loader";
+import TablePagination from "@/components/features/go-compare/TablePagination";
 import { ApiSearchResponseItem, SearchRecord } from "@/types/goCompare";
 import { useRouter } from "next/navigation";
 import { FaSort, FaSortUp, FaSortDown } from "react-icons/fa";

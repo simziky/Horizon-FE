@@ -166,12 +166,9 @@ export default function Packages() {
           window.open(response.data.url, "_blank");
         }
       } else {
-        console.error("No checkout URL returned");
         error("Failed to create checkout session. Please try again.");
       }
     } catch (err: any) {
-      console.error("Checkout error:", err);
-      
       // Check if it's the email already exists error
       if (err?.data?.responseCode === "91" || 
           (err?.data?.status === 422 && err?.data?.message?.includes("already registered"))) {
@@ -306,8 +303,6 @@ export default function Packages() {
       proceedToCheckout(plan);
     } else {
       // Normal pricing page behavior
-      console.log("Selected plan:", plan);
-      // Add your normal plan selection logic here if needed
     }
   };
 

@@ -1,8 +1,11 @@
-import { SubscriptionData } from "@/app/(dashboard)/subscriptions/_components/SubscriptionHistoryTable";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas-pro";
+import { SubscriptionData } from "@/components/features/subscriptions/SubscriptionHistoryTable";
 
 export const generateReceiptPdf = async (record: SubscriptionData) => {
+  const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
+    import("jspdf"),
+    import("html2canvas-pro"),
+  ]);
+
   const container = document.createElement("div");
   container.style.width = "595px";
   container.style.height = "842px";
